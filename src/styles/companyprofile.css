@@ -1,0 +1,199 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden; /* Prevents scrolling */
+}
+
+.company-profile {
+  width: 100%;
+  max-width: 1445px;
+  height: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+  border-radius: 30px 0px 0px 0px;
+  overflow: hidden;
+}
+
+.company {
+  margin-top: 10px;
+  width: 133px;
+
+  font-size: 18px;
+  font-weight: 600;
+  color: #282833;
+}
+
+.industry {
+  margin-top: 10px;
+  width: 137px;
+  /* font-family: Switzer; */
+  font-size: 18px;
+  font-weight: 600;
+  color: #282833;
+}
+
+.edit {
+  margin-left: 5px;
+
+  font-size: 24px;
+  font-weight: 600;
+  color: #282833;
+  margin-top: -15px;
+  margin-left: 25px;
+}
+
+.line {
+  width: 100%;
+  height: 1px;
+  background: #ddd;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.com {
+  margin-top: -10px;
+  margin-left: 5px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #282833;
+}
+
+.graph {
+  margin-left: 8px;
+  margin-top: 5px;
+  /* font-family: Switzer; */
+  font-size: 16px;
+  font-weight: 500;
+  color: #98a2b3;
+}
+
+.profile-section {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.logo-upload,
+.video-upload {
+  width: 48%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.comp {
+  margin-top: 20px;
+  margin-left: -490px;
+  margin-bottom: 10px;
+  /* font-family: Switzer; */
+  font-size: 18px;
+  font-weight: 600;
+  color: #282833;
+}
+
+.videe {
+  margin-bottom: 10px;
+  /* font-family: Switzer; */
+  font-size: 18px;
+  font-weight: 600;
+  color: #282833;
+  margin-top: 20px;
+  margin-left: -470px;
+}
+
+.uploaded-logo,
+.uploaded-video {
+  width: 100%;
+  max-width: 620px;
+  height: auto;
+  aspect-ratio: 16/9;
+  border-radius: 12px;
+}
+
+.upload-placeholder {
+  width: 100%;
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #ccc;
+  margin-bottom: 10px;
+  border-radius: 12px;
+}
+
+.upload-container {
+  text-align: left;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.upload-button1,
+.upload-button2 {
+  width: 92px;
+  height: 40px;
+  margin-top: 20px;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e9;
+  padding: 10px 20px;
+  border-radius: 15px;
+  cursor: pointer;
+  margin-bottom: 5px;
+  font-size: 16px;
+}
+
+.image,
+.vid {
+  margin-top: 15px;
+  margin-left: 10px;
+  color: #98a2b3;
+  /* font-family: Switzer; */
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.edit-info {
+  margin-top: 40px;
+  width: 100%;
+}
+
+.form-row {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  width: 48%;
+  margin-bottom: 20px;
+}
+
+input.companytext,
+select.in {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 15px;
+  /* font-family: Switzer; */
+  font-size: 16px;
+  font-weight: 500;
+  margin-top: 20px;
+}
+
+select.in option.ind {
+  color: #777;
+}
+
+.line {
+  width: 100%;
+}
+
+.hori {
+  margin-top: 10px;
+}

@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.invoice-checkbox {
+
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 1.25vw;
+  height: 1.25vw;
+  border-radius: 0.41vw;
+
+  vertical-align: middle;
+  position: relative;
+  cursor: pointer;
+  margin-right: 0.41vw;
+}
+
+.invoice-checkbox:checked {
+  background-color: #FFF;
+}
+
+
+
+.invoice-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.83vw;
+  height: 0.83vw;
+  background-color: #121212;
+  border-radius: 0.26vw;
+}
+
+
+
+.bg-abefc6 {
+  background-color: #DCFAE6;
+ 
+}
+
+.text-abefc6 {
+  color: #17B26A; 
+  border-color: #ABEFC6;
+}
+
+
+
+
+.invoices-table th {
+  background-color: #FFF;
+  text-align: center;
+}
+
+
+.invoices-table td {  
+  padding: 15px 1.04vw;
+  text-align: center; 
+}

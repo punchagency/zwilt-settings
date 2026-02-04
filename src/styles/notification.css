@@ -1,0 +1,245 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.notification-settings {
+  font-weight: 600;
+  padding: 2.4vh 1.25vw;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  height: auto;
+  box-sizing: border-box;
+}
+
+
+.title {
+  margin-bottom: 0.8vh;
+}
+
+.notification-settings .notification {
+
+  margin-bottom: 2vh;
+  font-size: 1.25vw;
+  font-weight: 600;
+  text-align: left;
+  color: #282833;
+}
+
+.control-switch{
+ font-family: 'Switzer' ;
+ font-weight: 500 ;
+  color: #98A2B3;
+ 
+}
+
+.notification-settings .notification-description {
+  font-weight: 400;
+  margin-bottom: -2vh;
+  width: 100%;
+  font-size: 0.83vw;
+  color: #6F6F76;
+}
+
+
+
+
+.notification-settings .tabs-container {
+  width: 100%;
+  border-bottom: 0.1vh solid #e0e0e0;
+  margin-bottom: 2vh;
+  display: flex;
+  justify-content: flex-start;
+  font-size: 0.93vw;
+  font-weight: 500;
+  text-align: left;
+  color: #28283399;
+}
+
+
+.notification-settings .tabs .MuiTabs-indicator {
+  background-color: transparent; /* Hide default indicator */
+}
+
+.notification-settings .tabs .Mui-selected {
+  color: #000000; /* Black text color for selected tab */
+  border-bottom: 0.2vh solid #000000; /* Black bottom border for selected tab */
+  font-weight: bold; /* Optionally, make the selected tab bold */
+
+}
+
+
+
+.notif{
+color: #6F6F76;
+font-size: 0.83vw;
+font-weight: 400;
+text-align: left;
+width: 14.94vw;
+height: 4.2vh;
+
+}
+.notification-settings .tabs {
+  color: #28283399;
+}
+
+.Basic,
+.Jobs,
+.Interview,
+.Candidate,
+.TeamActivity,
+.Billing,
+.UserAcc {
+
+
+  font-size: 0.93vw;
+  font-weight: 500 !important;
+  text-align: left;
+  color: #28283399;
+}
+
+
+
+.notification-settings .section {
+  margin-bottom: 2vh;
+  display: flex;
+  align-items: flex-start;
+}
+
+.notification-settings .title-description {
+  flex: 1;
+  margin-top: -1vh;
+}
+
+.notification-settings .section-title {
+  font-size: 0.93vw;
+  font-weight: bold;
+  margin-bottom: 0.5vh;
+  margin-right: 1.042vw;
+}
+
+.notification-settings .description {
+  font-size: 0.83vw;
+  color: #98A2B3;
+  margin-bottom: 1vh;
+  
+}
+
+.notification-settings .controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-left: 7.81vw;
+  /* margin-top: -1vh; */
+  
+}
+
+.notification-settings .tab-content {
+
+  width: 100%;
+  max-width: 62.5vw;
+  padding: 2vh;
+  background-color: #ffffff;
+  border-radius: 0.42vw;
+}
+
+.MuiTab-root {
+  text-transform: none;
+  font-weight: bold;
+  font-size: 0.83vw;
+  min-width: 0;
+  margin-right: 1.042vw;
+}
+
+.Mui-selected {
+  color: #000000 !important;
+}
+
+@media (max-width: 600px) {
+  .notification-settings .tab-content {
+    padding: 1vh;
+  }
+
+  .notification-settings .section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .notification-description {
+    font-size: 0.83vw;
+    font-weight: 500;
+    text-align: left;
+    color: #98a2b3;
+  }
+
+  .notification {
+    font-size: 1.25vw;
+    font-weight: 600;
+    line-height: 3.12vh;
+    text-align: left;
+    color: #282833;
+  }
+
+  .notification-settings .controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .notification-settings .controls label {
+    margin-right: 0;
+    margin-bottom: 1vh;
+  }
+}
+
+.line1 {
+  margin: 2.5vh;
+  width: auto;
+}
+
+.notification-description {
+  margin-top: -1vh;
+}
+
+.description {
+  background-color: #ffffff;
+}
+
+.horizontal-line {
+  margin-top: 20vh; /* Adjusted margin between horizontal line and buttons */
+  width: 416%;
+  margin-left: -7% ;
+}
+
+
+
+
+.hide-bottom-line {
+  opacity: 0; /* Adjust as needed */
+}
+
+.horizontal-line.hide-bottom-line {
+  display: none;
+}
+
+
+.description {
+  width: 14.95vw;
+  height: 4.2vh;
+  gap: 0px;
+  font-size: 0.83vw;
+  text-align: left;
+  color: #98a2b3;
+}
+
+
+
+
+.text{
+  font-weight: 500;
+}

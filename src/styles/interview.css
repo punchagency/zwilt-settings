@@ -1,0 +1,66 @@
+
+.setting input[type="checkbox"] {
+  
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 1.25vw;
+    height: 1.25vw;
+    border: 1px solid #ccc;
+    border-radius: 0.417vw;
+    vertical-align: middle;
+    position: relative;
+    cursor: pointer;
+    margin-right: 0.417vw; 
+  }
+  
+  .setting input[type="checkbox"]:checked {
+    background-color: #FFF; 
+  }
+
+
+  .setting input[type="checkbox"] + label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    height: 1.25vw; 
+  }
+
+  .setting input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    top: 48%; 
+    left: 50%; 
+    width: 75%; 
+    height: 75%; 
+    background-color: #121212;
+    border-radius: 0.26vw;
+    transform: translate(-50%, -50%);
+}
+
+
+
+  .setting label {
+    display: flex;
+    align-items: center;
+  }
+  
+
+  .setting input[type="radio"] {
+    margin-left: 0.521vw;
+  }
+  
+  .setting input[type="radio"] + label {
+    margin-left: 1.042vw;
+  }
+  
+  
+
+  .yes input[type="radio"], .no input[type="radio"] {
+    width: 1.25vw;
+    height: 1.25vw;
+    margin-right: 0.417vw; 
+    vertical-align: middle;
+    cursor: pointer; 
+    accent-color: black; /* Set the color of the radio button */
+  }
