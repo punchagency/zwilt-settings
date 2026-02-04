@@ -1,0 +1,13 @@
+.w {
+  @apply w-[0.78vw] h-[0.78vw] rounded-[0.2vw] bg-[#282833]
+
+
+
+  width: 15px;
+  height: 15px;
+  left: calc(50% - 15px / 2);
+  top: calc(50% - 15px / 2);
+
+  background: #282833;
+  border-radius: 3.84px;
+}

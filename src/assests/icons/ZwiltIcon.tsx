@@ -1,0 +1,32 @@
+import React from 'react'
+
+const ZwiltIcon = () => {
+  return (
+    <div>
+      <svg
+        width="1.25vw"
+        height="1.25vw"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <rect x="0.5" y="0.5" width="23" height="23" rx="11.5" fill="#FFFAEB" />
+        <rect
+          x="0.5"
+          y="0.5"
+          width="23"
+          height="23"
+          rx="11.5"
+          stroke="#FEDF89"
+        />
+        <path
+          d="M12.5433 12C12.5433 14.3573 10.6308 16.2683 8.27166 16.2683C5.91249 16.2683 4 14.3573 4 12C4 9.64269 5.91249 7.73171 8.27166 7.73171C10.6308 7.73171 12.5433 9.64269 12.5433 12Z"
+          fill="#FFBE2E"
+        />
+        <path d="M11.4449 17V7L19.9882 12L11.4449 17Z" fill="#FFBE2E" />
+      </svg>
+    </div>
+  );
+}
+
+export default ZwiltIcon

@@ -1,0 +1,12 @@
+.a {
+    @apply w-[23.70vw] h-[2.55vw] border-[0.05vw] border-[#e0e0e9] rounded-[0.78vw];
+  position: absolute;
+  width: 455px;
+  height: 49px;
+  left: 0px;
+  top: 0px;
+
+  /* Outline Color/Default */
+  border: 0.983536px solid #e0e0e9;
+  border-radius: 15px;
+}

@@ -1,0 +1,66 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+#yarn 
+#yarn.lock
+.env
+# dependencies
+/node_modules
+node_modules
+.next
+# folders
+pro/
+/.pnp
+.pnp.js
+hls/
+src/pages/test/
+src/components/test
+src/pages/test/aws-upload-progress.tsx
+src/pages/test/ffmpg-block.tsx
+src/pages/test/react-media-recorder.tsx
+src/pages/test/video-player.tsx
+src/pages/test/aws-upload-progress.tsx
+src/old-code/
+src/containers/create-interview/question-moodboard/MoodboardLeftPaneDebug.tsx
+src/containers/create-interview/question-moodboard/QuestionMoodboardDebug.tsx
+src/containers/create-interview/question-moodboard/MoodboardLeftPaneDebug2.tsx
+src/containers/create-interview/question-moodboard/MoodboardLeftPaneListViewPerfect.tsx
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# local env files - * represents all
+.env*
+.env*.local
+.env
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+play.js
+basic.html
+test.py
+
+
+# Sentry Config File
+.sentryclirc
+test.js
