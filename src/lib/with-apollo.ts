@@ -29,7 +29,7 @@ let apolloClient: ApolloClient<any> | null;
 export const APOLLO_STATE_PROP_NAME = "__APOLLO_STATE__";
 
 const aiCreditsUrl =
-  process.env.NEXT_PUBLIC_ZWILT_SERVER || "http://localhost:5005/graphql";
+  process.env.NEXT_PUBLIC_ZWILT_SERVER || "https://api.zwilt.com/graphql";
 
 function createApolloClient(headers?: any) {
   const httpLink = new HttpLink({
