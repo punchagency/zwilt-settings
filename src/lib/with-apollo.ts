@@ -46,10 +46,21 @@ function createApolloClient(headers?: any) {
     headers,
   });
 
+  const trackerLink = new HttpLink({
+    uri: "https://trackerserver.zwilt.com/graphql",
+    fetch,
+    credentials: "include",
+    headers,
+  });
+
   const splitLink = ApolloLink.split(
     (operation: any) => operation.getContext().clientName === "aiCredits",
     aiCreditsLink,
-    httpLink,
+    ApolloLink.split(
+      (operation: any) => operation.getContext().clientName === "tracker",
+      trackerLink,
+      httpLink,
+    ),
   );
 
   return new ApolloClient({

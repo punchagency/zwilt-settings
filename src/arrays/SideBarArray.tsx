@@ -21,6 +21,11 @@ export const sideBarArray: SideBar[] = [
     href: "/user",
   },
   {
+    name: "User Management",
+    icon: teamImage,
+    href: "/user-management",
+  },
+  {
     name: "Company Profile",
     icon: companyImage,
     href: "/companyprofile",

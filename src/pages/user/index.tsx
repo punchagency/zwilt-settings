@@ -64,17 +64,17 @@ interface userType {
 
 const normalizeImageUrl = (url: string | null): string | null => {
   if (!url) return null;
-  
+
   // If it's already a data URL or object URL, return as is
-  if (url.startsWith('data:') || url.startsWith('blob:')) {
+  if (url.startsWith("data:") || url.startsWith("blob:")) {
     return url;
   }
-  
+
   // Make sure S3 URLs use https
-  if (url.startsWith('http://')) {
-    url = url.replace('http://', 'https://');
+  if (url.startsWith("http://")) {
+    url = url.replace("http://", "https://");
   }
-  
+
   return url;
 };
 
@@ -103,7 +103,7 @@ const Page: React.FC<userType> = ({ userId }) => {
   const { updateUser, userState } = useUser();
   const user = userState?.currentUser?.user;
   const [profileImage, setProfileImage] = useState<string>(
-    normalizeImageUrl(user?.profile_img) || defaultImage
+    normalizeImageUrl(user?.profile_img) || defaultImage,
   );
   const [file, setFile] = useState<any>(null);
   const [imageLoadError, setImageLoadError] = useState(false);
@@ -133,7 +133,7 @@ const Page: React.FC<userType> = ({ userId }) => {
     const validTypes = ["image/jpeg", "image/jpg", "image/png"];
     if (!validTypes.includes(file.type)) {
       notifyErrorFxn(
-        "Invalid file type. Only JPG, JPEG, and PNG formats are allowed"
+        "Invalid file type. Only JPG, JPEG, and PNG formats are allowed",
       );
       return;
     }
@@ -158,8 +158,10 @@ const Page: React.FC<userType> = ({ userId }) => {
 
   const formik = useFormik({
     initialValues: {
-      firstName: user?.firstName || "",
-      lastName: user?.lastName || "",
+      firstName: user?.firstName || (user?.name ? user.name.split(" ")[0] : ""),
+      lastName:
+        user?.lastName ||
+        (user?.name ? user.name.split(" ").slice(1).join(" ") : ""),
       email: user?.email || "",
       phone: user?.phone || "",
       teamRole: user?.role || "user",
@@ -211,7 +213,7 @@ const Page: React.FC<userType> = ({ userId }) => {
       } catch (error) {
         console.error("Image upload failed:", error);
         notifyErrorFxn(
-          "Failed to upload profile image, but profile will still be updated"
+          "Failed to upload profile image, but profile will still be updated",
         );
       }
     }
@@ -226,8 +228,8 @@ const Page: React.FC<userType> = ({ userId }) => {
             profile_img: file
               ? uploadedImageUrl
               : profileImage === defaultImage
-              ? null
-              : profileImage,
+                ? null
+                : profileImage,
             phone: formik.values.phone,
           },
         },
@@ -243,8 +245,8 @@ const Page: React.FC<userType> = ({ userId }) => {
             profile_img: file
               ? uploadedImageUrl
               : profileImage === defaultImage
-              ? null
-              : profileImage,
+                ? null
+                : profileImage,
           },
         },
       });
@@ -255,8 +257,8 @@ const Page: React.FC<userType> = ({ userId }) => {
         imageUrl: file
           ? uploadedImageUrl
           : profileImage === defaultImage
-          ? null
-          : profileImage,
+            ? null
+            : profileImage,
         name: formik.values.firstName + " " + formik.values.lastName,
       });
 
@@ -306,7 +308,8 @@ const Page: React.FC<userType> = ({ userId }) => {
               <Stack
                 sx={{
                   gap: calculatePxToPercentage(20),
-                }}>
+                }}
+              >
                 <ProfileSection className="top-section">
                   <CustomText className="profile-img">Profile Image</CustomText>
                   <ImageContainer className="group">
@@ -326,7 +329,8 @@ const Page: React.FC<userType> = ({ userId }) => {
                       <button
                         type="button"
                         onClick={handleImageRemove}
-                        className="hidden group-hover:flex items-center justify-center text-[#2424  d1b2] hover:border-[#b4b4c8] hover:bg-[#f4f4fa00] p-2 rounded-full cursor-pointer border-[#E0E0E9] border hover:text-[#282833] absolute inset-0">
+                        className="hidden group-hover:flex items-center justify-center text-[#2424  d1b2] hover:border-[#b4b4c8] hover:bg-[#f4f4fa00] p-2 rounded-full cursor-pointer border-[#E0E0E9] border hover:text-[#282833] absolute inset-0"
+                      >
                         <CiSquareRemove className="text-2xl" />
                       </button>
                     )}
@@ -354,7 +358,8 @@ const Page: React.FC<userType> = ({ userId }) => {
               onSubmit={async (e: any) => {
                 e.preventDefault();
                 formik.handleSubmit();
-              }}>
+              }}
+            >
               <div>
                 <div className=" w-full mb-[0.83vw] grid grid-cols-2 gap-[0.83vw]">
                   <FormContainer>
@@ -534,7 +539,8 @@ const Page: React.FC<userType> = ({ userId }) => {
               <div>
                 <button
                   onClick={() => setShowDelete(true)}
-                  className="w-[9.68vw] h-[2.604vw] bg-[#F04438] hover:bg-[#f03838]  text-[white] rounded-[0.781vw] font-[500] text-[0.93vw]">
+                  className="w-[9.68vw] h-[2.604vw] bg-[#F04438] hover:bg-[#f03838]  text-[white] rounded-[0.781vw] font-[500] text-[0.93vw]"
+                >
                   Delete
                 </button>
               </div>

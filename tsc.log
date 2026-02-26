@@ -1,0 +1,104 @@
+src/components/Layout/AppLayout.tsx(10,20): error TS2307: Cannot find module '../common/Loader/Loader' or its corresponding type declarations.
+src/components/Layout/AppLayout.tsx(11,28): error TS2307: Cannot find module '@/types/layout' or its corresponding type declarations.
+src/components/Layout/AppLayout.tsx(12,41): error TS2307: Cannot find module '../header/accounts/utils' or its corresponding type declarations.
+src/components/Layout/AppLayout.tsx(18,32): error TS2339: Property 'layoutType' does not exist on type 'IAppLayout'.
+src/components/Layout/AuthLayout.tsx(3,27): error TS2307: Cannot find module '@/assets/lottie/Punch_Sign.json' or its corresponding type declarations.
+src/components/Layout/AuthLayout.tsx(4,20): error TS2307: Cannot find module 'react-lottie' or its corresponding type declarations.
+src/components/Layout/Layout.tsx(7,22): error TS2307: Cannot find module '@/hooks/auth/use-login' or its corresponding type declarations.
+src/components/Layout/Layout.tsx(8,20): error TS2307: Cannot find module '../common/Loader/Loader' or its corresponding type declarations.
+src/components/Layout/Layout.tsx(34,24): error TS2322: Type '{ children: any; layoutType: "normal" | "fullWidth" | undefined; }' is not assignable to type 'IntrinsicAttributes & IAppLayout'.
+  Property 'layoutType' does not exist on type 'IntrinsicAttributes & IAppLayout'.
+src/components/Table/TableFooter.tsx(2,24): error TS2307: Cannot find module '../pagination' or its corresponding type declarations.
+src/components/Table/TableFooter.tsx(4,22): error TS2307: Cannot find module '../dropdown' or its corresponding type declarations.
+src/components/Table/TableFooter.tsx(46,24): error TS7006: Parameter 'x' implicitly has an 'any' type.
+src/components/Table/custom-grid-table/GridTableRow.tsx(1,26): error TS2307: Cannot find module '@/components/buttons/CustomButton' or its corresponding type declarations.
+src/components/Table/index.tsx(1,24): error TS2307: Cannot find module '@/assets/icons/checkedBox' or its corresponding type declarations.
+src/components/Table/index.tsx(2,26): error TS2307: Cannot find module '@/assets/icons/unCheckedBox' or its corresponding type declarations.
+src/components/common/input/index.tsx(9,27): error TS2307: Cannot find module '@/components/icons/DownArrowIcon' or its corresponding type declarations.
+src/components/common/input/index.tsx(12,38): error TS2307: Cannot find module '@mui/x-date-pickers' or its corresponding type declarations.
+src/components/common/input/index.tsx(13,30): error TS2307: Cannot find module '@mui/x-date-pickers/AdapterDayjs' or its corresponding type declarations.
+src/components/common/input/sub-component/CustomDateSelector.tsx(3,33): error TS2307: Cannot find module 'react-date-range' or its corresponding type declarations.
+src/components/common/input/sub-component/CustomDateSelector.tsx(21,20): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/components/common/input/sub-component/TimeSelector.tsx(2,30): error TS2307: Cannot find module '@mui/x-date-pickers/AdapterDayjs' or its corresponding type declarations.
+src/components/common/input/sub-component/TimeSelector.tsx(3,38): error TS2307: Cannot find module '@mui/x-date-pickers/LocalizationProvider' or its corresponding type declarations.
+src/components/common/input/sub-component/TimeSelector.tsx(4,28): error TS2307: Cannot find module '@mui/x-date-pickers/TimePicker' or its corresponding type declarations.
+src/components/common/input/sub-component/datePickert.tsx(3,33): error TS2307: Cannot find module 'react-date-range' or its corresponding type declarations.
+src/components/modal/ChangePasswordModal.tsx(6,31): error TS2307: Cannot find module '@/hooks/auth/use-change-password' or its corresponding type declarations.
+src/components/modal/DialogBox.tsx(5,28): error TS2307: Cannot find module '../dropdown/CustomDropdown' or its corresponding type declarations.
+src/components/projects/AddMembers.tsx(9,22): error TS2307: Cannot find module '../dropdown' or its corresponding type declarations.
+src/components/projects/AddMembers.tsx(12,28): error TS2307: Cannot find module '../dropdown/CustomDropdown' or its corresponding type declarations.
+src/components/projects/AddMembers.tsx(14,32): error TS2307: Cannot find module '@/graphql/mutations/project' or its corresponding type declarations.
+src/components/projects/AddMembers.tsx(125,42): error TS7006: Parameter 'x' implicitly has an 'any' type.
+src/components/projects/NewProjectModal.tsx(12,22): error TS2307: Cannot find module '../dropdown' or its corresponding type declarations.
+src/components/projects/NewProjectModal.tsx(15,28): error TS2307: Cannot find module '../dropdown/CustomDropdown' or its corresponding type declarations.
+src/components/projects/NewProjectModal.tsx(17,48): error TS2307: Cannot find module '@/graphql/mutations/project' or its corresponding type declarations.
+src/components/projects/NewProjectModal.tsx(293,42): error TS7006: Parameter 'x' implicitly has an 'any' type.
+src/components/projects/index.tsx(17,30): error TS2307: Cannot find module '@/graphql/queries/project' or its corresponding type declarations.
+src/components/projects/index.tsx(23,8): error TS2307: Cannot find module '@/graphql/mutations/project' or its corresponding type declarations.
+src/components/projects/index.tsx(33,8): error TS2307: Cannot find module '@/atoms/manager-projects-atom' or its corresponding type declarations.
+src/components/projects/index.tsx(1194,15): error TS2322: Type '{ key: number; onSelect: (e: any) => void; columns: ({ name: Element; id: string; width: number; render: (value: any) => Element; } | { name: string; id: string; width: number; render: (value: any) => string; } | { ...; })[]; data: never[]; selectedRows: any[] | undefined; }' is not assignable to type 'IntrinsicAttributes & { columns: any; Tdata: any; statusType: string; }'.
+  Property 'onSelect' does not exist on type 'IntrinsicAttributes & { columns: any; Tdata: any; statusType: string; }'.
+src/components/projects/index.tsx(1194,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/components/user/AddMembersForm.tsx(26,8): error TS2307: Cannot find module '../add-user/formHelper' or its corresponding type declarations.
+src/components/user/AddMembersForm.tsx(125,36): error TS2304: Cannot find name 'TGetUserByIdResponse'.
+src/components/user/AddMembersForm.tsx(137,66): error TS2304: Cannot find name 'TGetUserCommon'.
+src/components/user/AssignProjectForm.tsx(3,28): error TS2307: Cannot find module '../dropdown/CustomDropdown' or its corresponding type declarations.
+src/components/user/AssignProjectForm.tsx(44,20): error TS7006: Parameter 'ids' implicitly has an 'any' type.
+src/components/user/add-user/add-user-upload.tsx(4,31): error TS2307: Cannot find module '../common/profile-file-upload/ProfileFileUpload' or its corresponding type declarations.
+src/components/user/add-user/formHelper.ts(124,55): error TS2304: Cannot find name 'TGetUserCommon'.
+src/components/user/add-user/index.tsx(7,20): error TS2307: Cannot find module '../common/button' or its corresponding type declarations.
+src/components/user/add-user/index.tsx(22,27): error TS2307: Cannot find module '../../utils/uploadMedaia' or its corresponding type declarations.
+src/components/user/add-user/index.tsx(82,36): error TS2304: Cannot find name 'TGetUserByIdResponse'.
+src/components/user/add-user/index.tsx(93,81): error TS2304: Cannot find name 'TGetUserCommon'.
+src/graphql/mutations/user.ts(1,10): error TS2300: Duplicate identifier 'gql'.
+src/graphql/mutations/user.ts(35,14): error TS2451: Cannot redeclare block-scoped variable 'INVITE_USER'.
+src/graphql/mutations/user.ts(41,14): error TS2451: Cannot redeclare block-scoped variable 'UPDATE_USER'.
+src/graphql/mutations/user.ts(46,10): error TS2300: Duplicate identifier 'gql'.
+src/graphql/mutations/user.ts(53,14): error TS2451: Cannot redeclare block-scoped variable 'INVITE_USER'.
+src/graphql/mutations/user.ts(77,14): error TS2451: Cannot redeclare block-scoped variable 'UPDATE_USER'.
+src/graphql/queries/user.ts(1,10): error TS2300: Duplicate identifier 'gql'.
+src/graphql/queries/user.ts(50,10): error TS2300: Duplicate identifier 'gql'.
+src/hooks/reports/use-attendance-report-graphql.ts(6,39): error TS2307: Cannot find module '@/graphql/queries/reports' or its corresponding type declarations.
+src/hooks/reports/use-attendance-report-page.ts(6,8): error TS2307: Cannot find module '@/atoms/attendance-report-atom' or its corresponding type declarations.
+src/hooks/reports/use-attendance-report-page.ts(7,39): error TS2307: Cannot find module '@/graphql/queries/reports' or its corresponding type declarations.
+src/hooks/reports/use-attendance-report-page.ts(35,23): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/hooks/reports/use-attendance-report-page.ts(46,16): error TS18046: 'AttendanceReportPageState' is of type 'unknown'.
+src/hooks/reports/use-daily-totals-graphql.ts(9,8): error TS2307: Cannot find module '@/graphql/queries/reports' or its corresponding type declarations.
+src/hooks/reports/use-daily-totals-graphql.ts(12,50): error TS2307: Cannot find module '@/utils/date-range' or its corresponding type declarations.
+src/hooks/reports/use-daily-totals-graphql.ts(275,34): error TS7006: Parameter 'header' implicitly has an 'any' type.
+src/hooks/reports/use-daily-totals.ts(3,8): error TS2307: Cannot find module '@/atoms/daily-totals-page-atom' or its corresponding type declarations.
+src/hooks/reports/use-daily-totals.ts(7,32): error TS2307: Cannot find module '@/utils/time' or its corresponding type declarations.
+src/hooks/reports/use-daily-totals.ts(25,12): error TS18046: 'recoilState' is of type 'unknown'.
+src/hooks/reports/use-daily-totals.ts(35,28): error TS18046: 'dailyTotalsPageState' is of type 'unknown'.
+src/hooks/reports/use-daily-totals.ts(37,40): error TS2339: Property 'timeAndActivity' does not exist on type '{}'.
+src/hooks/reports/use-daily-totals.ts(43,57): error TS2339: Property 'selectedLocation' does not exist on type '{}'.
+src/hooks/reports/use-daily-totals.ts(43,98): error TS2339: Property 'selectedLocation' does not exist on type '{}'.
+src/hooks/reports/use-daily-totals.ts(45,91): error TS2339: Property 'selectedLocation' does not exist on type '{}'.
+src/hooks/reports/use-daily-totals.ts(49,16): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/hooks/reports/use-daily-totals.ts(49,19): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/hooks/reports/use-daily-totals.ts(50,15): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/hooks/reports/use-daily-totals.ts(57,38): error TS2339: Property 'tableHeaders' does not exist on type '{}'.
+src/hooks/reports/use-daily-totals.ts(61,36): error TS7006: Parameter 'header' implicitly has an 'any' type.
+src/hooks/reports/use-daily-totals.ts(61,44): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/hooks/reports/use-daily-totals.ts(64,56): error TS2339: Property 'tableHeaders' does not exist on type '{}'.
+src/hooks/reports/use-daily-totals.ts(129,23): error TS7006: Parameter 'prevState' implicitly has an 'any' type.
+src/hooks/reports/use-daily-totals.ts(143,7): error TS18046: 'dailyTotalsPageState' is of type 'unknown'.
+src/hooks/reports/use-daily-totals.ts(189,12): error TS18046: 'dailyTotalsPageState' is of type 'unknown'.
+src/hooks/reports/use-daily-totals.ts(194,10): error TS18046: 'recoilState' is of type 'unknown'.
+src/hooks/reports/use-daily-totals.ts(195,25): error TS18046: 'recoilState' is of type 'unknown'.
+src/hooks/reports/use-time-and-activit-report-old.ts(9,8): error TS2307: Cannot find module '@/graphql/queries/report' or its corresponding type declarations.
+src/hooks/reports/use-time-and-activit-report-old.ts(12,36): error TS2307: Cannot find module '@/utils/date-range' or its corresponding type declarations.
+src/hooks/reports/use-time-and-activity-graphql.ts(9,8): error TS2307: Cannot find module '@/graphql/queries/report' or its corresponding type declarations.
+src/hooks/reports/use-time-and-activity-graphql.ts(14,8): error TS2307: Cannot find module '@/utils/date-range' or its corresponding type declarations.
+src/hooks/reports/use-time-and-activity-graphql.ts(15,54): error TS2307: Cannot find module '@/utils/time' or its corresponding type declarations.
+src/hooks/reports/use-time-and-activity-graphql.ts(16,30): error TS2307: Cannot find module '@/graphql/queries/project' or its corresponding type declarations.
+src/hooks/reports/use-time-and-activity-graphql.ts(19,29): error TS2307: Cannot find module '@/utils/helper-functions' or its corresponding type declarations.
+src/hooks/reports/use-time-and-activity-graphql.ts(65,24): error TS7006: Parameter 'header' implicitly has an 'any' type.
+src/hooks/reports/use-time-and-activity-graphql.ts(120,37): error TS7006: Parameter 'header' implicitly has an 'any' type.
+src/hooks/reports/use-time-and-activity-graphql.ts(408,26): error TS7006: Parameter 'header' implicitly has an 'any' type.
+src/hooks/reports/use-time-and-activity-report.ts(7,8): error TS2307: Cannot find module '@/atoms/time-and-activity-page-atom' or its corresponding type declarations.
+src/hooks/reports/use-time-and-activity-report.ts(25,23): error TS7006: Parameter 'prevState' implicitly has an 'any' type.
+src/hooks/reports/use-time-and-activity-report.ts(42,12): error TS18046: 'recoilState' is of type 'unknown'.
+src/utils/crypto.ts(1,22): error TS7016: Could not find a declaration file for module 'crypto-js'. '/home/val/Projects/productivity-suite/zwilt-settings/node_modules/crypto-js/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/crypto-js` if it exists or add a new declaration (.d.ts) file containing `declare module 'crypto-js';`
+src/utils/global.ts(1,36): error TS2307: Cannot find module './types/global' or its corresponding type declarations.

@@ -18,7 +18,6 @@ interface User {
     name?: string;
     profile_img: string;
     createdAt: null;
-
   };
   role: string;
   clientAccountType: string;
@@ -36,7 +35,6 @@ interface InviteUserInput {
   clientAccountType: string;
 }
 
-
 const InvitationModal: React.FC<addTeamProps> = ({
   setCurrentModal,
   handleCloseModal,
@@ -51,7 +49,9 @@ const InvitationModal: React.FC<addTeamProps> = ({
   const [rotated, setRotated] = useState(false);
   const [isRotated, setIsRotated] = useState(false);
 
-  const { data, loading, error } = useQuery(GET_INVITED_USERS);
+  const { data, loading, error } = useQuery(GET_INVITED_USERS, {
+    context: { clientName: "tracker" },
+  });
 
   const selectUserbuttonRef = useRef<HTMLButtonElement>(null);
   const roleButtonRef = useRef<HTMLButtonElement>(null);
@@ -89,43 +89,47 @@ const InvitationModal: React.FC<addTeamProps> = ({
   };
 
   const user = data?.getInvitedUsers?.data.find(
-    (member: any) => member?.user?.email === email
+    (member: any) => member?.user?.email === email,
   );
 
   const [inviteUser] = useMutation(INVITE_USER, {
+    context: { clientName: "tracker" },
     update(cache, { data }) {
       try {
         const existingData = cache.readQuery<any>({
-          query: GET_INVITED_USERS
+          query: GET_INVITED_USERS,
         });
-  
+
         const newInvitedUser = {
           __typename: "InvitedUser",
           _id: `temp-${Date.now()}`,
           user: {
             __typename: "User",
             email: email,
-            name: email.split('@')[0],
+            name: email.split("@")[0],
             profile_img: null,
-            createdAt: null
+            createdAt: null,
           },
           role: selectedRole,
           clientAccountType: selectedUser === "Admin User" ? "ADMIN" : "MEMBER",
-          profileStatus: "pending"
+          profileStatus: "pending",
         };
-  
+
         // Match the query structure with success and data fields
         cache.writeQuery({
           query: GET_INVITED_USERS,
           data: {
             getInvitedUsers: {
               success: true,
-              data: [...existingData?.getInvitedUsers?.data || [], newInvitedUser]
-            }
-          }
+              data: [
+                ...(existingData?.getInvitedUsers?.data || []),
+                newInvitedUser,
+              ],
+            },
+          },
         });
       } catch (error) {
-        console.error('Cache update error:', error);
+        console.error("Cache update error:", error);
       }
     },
     onCompleted: () => {
@@ -135,13 +139,16 @@ const InvitationModal: React.FC<addTeamProps> = ({
     onError: (error) => {
       notifyErrorFxn(error.message || "Failed to send invitation");
     },
-    refetchQueries: [{ query: GET_INVITED_USERS }]
+    refetchQueries: [{ query: GET_INVITED_USERS }],
   });
 
   const handleSendInvite = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (selectedUser === "Select an option" || selectedRole === "Select an option") {
+    if (
+      selectedUser === "Select an option" ||
+      selectedRole === "Select an option"
+    ) {
       notifyErrorFxn("Please select both user type and role");
       return;
     }
@@ -153,16 +160,17 @@ const InvitationModal: React.FC<addTeamProps> = ({
 
     try {
       await inviteUser({
-        variables: { 
+        variables: {
           input: {
             email,
             role: selectedRole,
-            clientAccountType: selectedUser === "Admin User" ? "ADMIN" : "MEMBER"
-          }
-        }
+            clientAccountType:
+              selectedUser === "Admin User" ? "ADMIN" : "MEMBER",
+          },
+        },
       });
     } catch (error) {
-      console.error('Error sending invitation:', error);
+      console.error("Error sending invitation:", error);
     }
   };
 

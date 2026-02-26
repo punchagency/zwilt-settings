@@ -47,3 +47,88 @@ export const TempGetUser = gql`
     }
   }
 `;
+export const GET_USERS = gql`
+  query GetUsers($input: usersFilterInput) {
+    getUsers(input: $input) {
+      statusCode
+      success
+      message
+      data {
+        _id
+        title
+        name
+        firstName
+        lastName
+        email
+        profileImg
+        inviteToken
+        allowTimeTrackingOnAllUserProjects
+        role
+        projects {
+          _id
+          projectName
+        }
+        acceptedInvite
+        createdAt
+        status
+        location
+      }
+    }
+  }
+`;
+export const GET_PROJECTS = gql`
+  query GetProjects {
+    getProjects {
+      data {
+        _id
+        projectName
+        projectImage
+        status
+        members {
+          _id
+          name
+          email
+          profileImg
+          inviteToken
+          passwordResetToken
+          allowTimeTrackingOnAllUserProjects
+          role
+          projects {
+            _id
+          }
+          acceptedInvite
+          createdAt
+          status
+        }
+        managers {
+          _id
+          name
+          email
+          profileImg
+          inviteToken
+          passwordResetToken
+          allowTimeTrackingOnAllUserProjects
+          role
+          projects {
+            _id
+          }
+          acceptedInvite
+          createdAt
+        }
+      }
+    }
+  }
+`;
+
+export const GET_PROJECTS_DATA = gql`
+  query GetProjects($input: projectsFilterInput) {
+    getProjects(input: $input) {
+      data {
+        _id
+        projectName
+        projectImage
+        status
+      }
+    }
+  }
+`;

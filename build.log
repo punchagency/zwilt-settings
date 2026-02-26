@@ -1,0 +1,203 @@
+
+> zwilt-settings@0.1.0 build
+> next build
+
+- info Loaded env from /home/val/Projects/productivity-suite/zwilt-settings/.env
+- info Linting and checking validity of types...
+
+./src/components/BasicNotification.tsx
+27:8  Warning: React Hook useCallback has a missing dependency: 'getNotificationState'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/Layout/AppLayout.tsx
+30:6  Warning: React Hook useEffect has a missing dependency: 'user.isAuth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+34:6  Warning: React Hook useEffect has a missing dependency: 'user.isAuth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/Table/index.tsx
+173:6  Warning: React Hook useEffect has a missing dependency: 'data'. Either include it or remove the dependency array. If 'setDataShown' needs the current value of 'data', you can also switch to useReducer instead of useState and read 'data' in the reducer.  react-hooks/exhaustive-deps
+181:6  Warning: React Hook useEffect has missing dependencies: 'data?.length' and 'limit'. Either include them or remove the dependency array. If 'setPageInfo' needs the current value of 'data.length', you can also switch to useReducer instead of useState and read 'data.length' in the reducer.  react-hooks/exhaustive-deps
+231:6  Warning: React Hook useEffect has a missing dependency: 'onSelect'. Either include it or remove the dependency array. If 'onSelect' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+244:6  Warning: React Hook useEffect has a missing dependency: 'selected'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/billing.tsx
+32:8  Warning: React Hook useEffect has a missing dependency: 'getNotificationState'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/candidate.tsx
+21:8  Warning: React Hook useEffect has a missing dependency: 'getNotificationState'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/common/TitleBar/ControlPanel.tsx
+48:9  Warning: The 'handleClick' function makes the dependencies of useEffect Hook (at line 59) change on every render. Move it inside the useEffect callback. Alternatively, wrap the definition of 'handleClick' in its own useCallback() Hook.  react-hooks/exhaustive-deps
+
+./src/components/company-profile/CompanyProfile.tsx
+324:6  Warning: React Hook useEffect has missing dependencies: 'formik' and 'setLinks'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/image/NormalizedImage.tsx
+19:10  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/interview.tsx
+21:8  Warning: React Hook useEffect has a missing dependency: 'getNotificationState'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/jobs.tsx
+21:8  Warning: React Hook useEffect has a missing dependency: 'getNotificationState'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/manageteam/ManageOrganization.tsx
+60:6  Warning: React Hook useEffect has a missing dependency: 'checkAdminStatus'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/manageteam/ManageTeam.tsx
+128:6  Warning: React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/phone_account/edit-modal.tsx
+80:6  Warning: React Hook useEffect has a missing dependency: 'city.msisdn'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/projects/AddMembers.tsx
+254:6  Warning: React Hook useEffect has missing dependencies: 'managersId', 'membersId', and 'qaId'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+361:6  Warning: React Hook useEffect has missing dependencies: 'action' and 'updateProject'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/projects/ExternalActionModal.tsx
+121:6  Warning: React Hook useEffect has missing dependencies: 'deleteBtn', 'firstBtn', and 'handleClose'. Either include them or remove the dependency array. If 'handleClose' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./src/components/projects/NewProjectModal.tsx
+372:6  Warning: React Hook useEffect has missing dependencies: 'managersId', 'membersId', and 'qaId'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+422:6  Warning: React Hook useEffect has a missing dependency: 'onFileChange'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+580:6  Warning: React Hook useEffect has missing dependencies: 'action', 'createProject', and 'updateProject'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/projects/index.tsx
+421:6  Warning: React Hook useEffect has missing dependencies: 'getProjects' and 'getProjectsSimple'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+545:6  Warning: React Hook useEffect has missing dependencies: 'computeManagerProjects' and 'setManagerProjects'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+906:6  Warning: React Hook useEffect has missing dependencies: 'archiveProject', 'delProject', and 'unArchiveProject'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/sales.tsx
+43:6  Warning: React Hook useEffect has a missing dependency: 'getNotificationState'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/teamactivity.tsx
+27:8  Warning: React Hook useEffect has a missing dependency: 'getNotificationState'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/tracker.tsx
+33:6  Warning: React Hook useEffect has a missing dependency: 'getNotificationState'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/user/AddMembersForm.tsx
+173:6  Warning: React Hook useEffect has a missing dependency: 'getProjects'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+245:6  Warning: React Hook useEffect has a missing dependency: 'onFileChange'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/user/add-user/add-user-heading.tsx
+11:9  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+11:9  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/user/add-user/add-user-upload.tsx
+28:11  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+35:13  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+35:13  Warning: img elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+./src/components/user/add-user/index.tsx
+149:6  Warning: React Hook useEffect has missing dependencies: 'fetchUser' and 'setTeamAtomState'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/components/useracc.tsx
+29:8  Warning: React Hook useEffect has a missing dependency: 'getNotificationState'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/containers/layout/AuthGuard.tsx
+37:6  Warning: React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/containers/search-container/CompanySearch.tsx
+53:6  Warning: React Hook useEffect has a missing dependency: 'setEmpty'. Either include it or remove the dependency array. If 'setEmpty' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./src/containers/search-container/EmailSearch.tsx
+58:6  Warning: React Hook useEffect has a missing dependency: 'setEmpty'. Either include it or remove the dependency array. If 'setEmpty' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./src/containers/search-container/GeneralSearchBar.tsx
+405:6  Warning: React Hook useCallback has a missing dependency: 'isClient'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/containers/search-container/InterviewSearch.tsx
+67:6  Warning: React Hook useEffect has a missing dependency: 'setEmpty'. Either include it or remove the dependency array. If 'setEmpty' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./src/containers/search-container/NotificationSearch.tsx
+77:6  Warning: React Hook useEffect has a missing dependency: 'setEmpty'. Either include it or remove the dependency array. If 'setEmpty' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./src/containers/search-container/PaymentSearch.tsx
+74:6  Warning: React Hook useEffect has a missing dependency: 'setEmpty'. Either include it or remove the dependency array. If 'setEmpty' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./src/containers/search-container/PhoneSearch.tsx
+61:6  Warning: React Hook useEffect has a missing dependency: 'setEmpty'. Either include it or remove the dependency array. If 'setEmpty' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./src/containers/search-container/SecuritySearch.tsx
+73:4  Warning: React Hook useEffect has a missing dependency: 'setEmpty'. Either include it or remove the dependency array. If 'setEmpty' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./src/containers/search-container/TeamSearch.tsx
+87:4  Warning: React Hook useEffect has a missing dependency: 'setEmpty'. Either include it or remove the dependency array. If 'setEmpty' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./src/containers/search-container/UserSearch.tsx
+50:6  Warning: React Hook useEffect has a missing dependency: 'setEmpty'. Either include it or remove the dependency array. If 'setEmpty' changes too often, find the parent component that defines it and wrap that definition in useCallback.  react-hooks/exhaustive-deps
+
+./src/hooks/reports/scheduled-report-page.ts
+98:6  Warning: React Hook useCallback has a missing dependency: 'updateUserPage'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/hooks/reports/use-attendance-report-graphql.ts
+28:6  Warning: React Hook useEffect has a missing dependency: 'updateAttendanceReportPage'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+42:6  Warning: React Hook useCallback has missing dependencies: 'fetchAttendanceReport', 'user.userData?._id', 'user.userData?.attachedOrganization._id', and 'user.userData?.role'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+59:5  Warning: React Hook useCallback has missing dependencies: 'fetchAttendanceReport', 'user.userData?._id', 'user.userData?.attachedOrganization._id', and 'user.userData?.role'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/hooks/reports/use-daily-totals-graphql.ts
+186:6  Warning: React Hook useEffect has a missing dependency: 'updateDailyTotalsPage'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+217:5  Warning: React Hook useCallback has missing dependencies: 'getDailyTotals', 'user.userData?._id', and 'user.userData?.role'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+227:9  Warning: The 'getFirstAndLastDay' function makes the dependencies of useMemo Hook (at line 386) change on every render. Move it inside the useMemo callback. Alternatively, wrap the definition of 'getFirstAndLastDay' in its own useCallback() Hook.  react-hooks/exhaustive-deps
+356:6  Warning: React Hook useEffect has missing dependencies: 'getDateRange' and 'updateDailyTotalsPage'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+375:5  Warning: React Hook useCallback has a missing dependency: 'getDailyTotalsGroupedData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/hooks/reports/use-daily-totals.ts
+26:6  Warning: React Hook useCallback has an unnecessary dependency: 'dailyTotalsPageState'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+123:5  Warning: React Hook useCallback has an unnecessary dependency: 'recoilState'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+134:5  Warning: React Hook useCallback has an unnecessary dependency: 'recoilState'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+197:6  Warning: React Hook useCallback has an unnecessary dependency: 'dailyTotalsPageState'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/hooks/reports/use-time-and-activit-report-old.ts
+75:9  Warning: The 'chartReportData' array makes the dependencies of useMemo Hook (at line 769) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'chartReportData' in its own useMemo() Hook.  react-hooks/exhaustive-deps
+92:9  Warning: The 'groupByMemberPayload' object makes the dependencies of useMemo Hook (at line 769) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'groupByMemberPayload' in its own useMemo() Hook.  react-hooks/exhaustive-deps
+164:3  Warning: The 'useGroupByMemberData' function makes the dependencies of useMemo Hook (at line 769) change on every render. Move it inside the useMemo callback. Alternatively, wrap the definition of 'useGroupByMemberData' in its own useCallback() Hook.  react-hooks/exhaustive-deps
+362:9  Warning: The 'groupByDatePayload' object makes the dependencies of useMemo Hook (at line 769) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'groupByDatePayload' in its own useMemo() Hook.  react-hooks/exhaustive-deps
+400:3  Warning: The 'useGroupByDate' function makes the dependencies of useMemo Hook (at line 769) change on every render. Move it inside the useMemo callback. Alternatively, wrap the definition of 'useGroupByDate' in its own useCallback() Hook.  react-hooks/exhaustive-deps
+556:9  Warning: The 'groupByProjectPayload' object makes the dependencies of useMemo Hook (at line 769) change on every render. Move it inside the useMemo callback. Alternatively, wrap the initialization of 'groupByProjectPayload' in its own useMemo() Hook.  react-hooks/exhaustive-deps
+608:3  Warning: The 'useGroupByProject' function makes the dependencies of useMemo Hook (at line 769) change on every render. Move it inside the useMemo callback. Alternatively, wrap the definition of 'useGroupByProject' in its own useCallback() Hook.  react-hooks/exhaustive-deps
+
+./src/hooks/reports/use-time-and-activity-graphql.ts
+132:6  Warning: React Hook useEffect has missing dependencies: 'getDateRange' and 'updateTimeAndActivityPage'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+152:5  Warning: React Hook useCallback has missing dependencies: 'getDateRange', 'getTimeAndActivityReport', 'user.userData?._id', and 'user.userData?.role'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+172:5  Warning: React Hook useCallback has missing dependencies: 'getDateRange', 'getTimeAndActivityReport', and 'user.userData?._id'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+424:6  Warning: React Hook useEffect has missing dependencies: 'filterByValue', 'getDateRange', and 'updateTimeAndActivityPage'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+455:5  Warning: React Hook useCallback has a missing dependency: 'getTimeAndActivityTableData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+480:6  Warning: React Hook useCallback has a missing dependency: 'getProjectsData'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+484:9  Warning: The 'fetchDailyStats' function makes the dependencies of useMemo Hook (at line 542) change on every render. Move it inside the useMemo callback. Alternatively, wrap the definition of 'fetchDailyStats' in its own useCallback() Hook.  react-hooks/exhaustive-deps
+
+./src/hooks/reports/use-time-and-activity-report.ts
+30:5  Warning: React Hook useCallback has an unnecessary dependency: 'recoilState'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+39:6  Warning: React Hook useCallback has an unnecessary dependency: 'recoilState'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+43:6  Warning: React Hook useCallback has an unnecessary dependency: 'timeAndActivityPageState'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/hooks/team/use-location-options.ts
+14:9  Warning: The 'teams' logical expression could make the dependencies of useMemo Hook (at line 47) change on every render. To fix this, wrap the initialization of 'teams' in its own useMemo() Hook.  react-hooks/exhaustive-deps
+
+./src/hooks/team/use-team.ts
+22:5  Warning: React Hook useCallback has an unnecessary dependency: 'recoilState'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+31:6  Warning: React Hook useCallback has an unnecessary dependency: 'setTeamState'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/hooks/user/use-user-page-graphql.ts
+114:6  Warning: React Hook useEffect has missing dependencies: 'formatDate' and 'updateUserPage'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+157:6  Warning: React Hook useEffect has a missing dependency: 'updateUserPage'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+459:5  Warning: React Hook useMemo has unnecessary dependencies: 'data' and 'projectData'. Either exclude them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/hooks/user/use-user-page.ts
+123:6  Warning: React Hook useCallback has a missing dependency: 'updateUserPage'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./src/pages/notifications/index.tsx
+95:6  Warning: React Hook useEffect has a missing dependency: 'getTabMap'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+Failed to compile.
+
+./src/components/Layout/AppLayout.tsx:12:41
+Type error: Cannot find module '../header/accounts/utils' or its corresponding type declarations.
+
+[0m [90m 10 | [39m[36mimport[39m [33mLoader[39m [36mfrom[39m [32m"../common/Loader/Loader"[39m[33m;[39m[0m
+[0m [90m 11 | [39m[36mimport[39m { layoutType } [36mfrom[39m [32m"@/types/layout"[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 12 | [39m[36mimport[39m { calculatePxToPercentage } [36mfrom[39m [32m"../header/accounts/utils"[39m[33m;[39m[0m
+[0m [90m    | [39m                                        [31m[1m^[22m[39m[0m
+[0m [90m 13 | [39m[0m
+[0m [90m 14 | [39m[36minterface[39m [33mIAppLayout[39m [36mextends[39m layoutType {[0m
+[0m [90m 15 | [39m  children[33m:[39m [33mReact[39m[33m.[39m[33mReactNode[39m[33m;[39m[0m

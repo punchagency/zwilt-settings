@@ -62,23 +62,25 @@ const UpdateOrganizationMemeberModal: React.FC<addTeamProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(
     user?.profile_img ||
-      "https://zwilt.s3.amazonaws.com/42orqxXf_1695110728039650955aaef4301a49705a551.jpeg"
+      "https://zwilt.s3.amazonaws.com/42orqxXf_1695110728039650955aaef4301a49705a551.jpeg",
   );
   const [imageError, setImageError] = useState<string | null>(null);
 
-  const { data, loading, error } = useQuery(GET_ORGANIZATION_MEMBERS);
+  const { data, loading, error } = useQuery(GET_ORGANIZATION_MEMBERS, {
+    context: { clientName: "tracker" },
+  });
 
   // Set selectedUser based on clientAccountType when the modal opens
   useEffect(() => {
     if (data) {
       const currentUser = data?.getOrganizationMembers?.data?.find(
-        (member: any) => member?.user?._id === user._id
+        (member: any) => member?.user?._id === user._id,
       );
 
       if (currentUser) {
         const accountType = currentUser.clientAccountType;
         setSelectedUser(
-          accountType === "ADMIN" ? "Admin User" : "Account User"
+          accountType === "ADMIN" ? "Admin User" : "Account User",
         );
       }
     }
@@ -120,6 +122,7 @@ const UpdateOrganizationMemeberModal: React.FC<addTeamProps> = ({
   };
 
   const [updateMemberProfile] = useMutation(UPDATE_MEMBER_PROFILE, {
+    context: { clientName: "tracker" },
     update(cache, { data: { updateMemberProfile } }) {
       try {
         const existingMembers: any = cache.readQuery({
@@ -127,7 +130,7 @@ const UpdateOrganizationMemeberModal: React.FC<addTeamProps> = ({
         });
 
         const newMembers = existingMembers.getOrganizationMembers.data.filter(
-          (member: User) => member._id !== user._id
+          (member: User) => member._id !== user._id,
         );
 
         cache.writeQuery({
@@ -179,7 +182,7 @@ const UpdateOrganizationMemeberModal: React.FC<addTeamProps> = ({
       setCurrentModal(null);
     } catch (error) {
       notifyErrorFxn(
-        "An error occurred while updating the profile. Please try again."
+        "An error occurred while updating the profile. Please try again.",
       );
       console.error("Error updating profile:", error);
     } finally {
@@ -194,7 +197,7 @@ const UpdateOrganizationMemeberModal: React.FC<addTeamProps> = ({
   };
 
   const handleFileChange = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
 
@@ -271,39 +274,39 @@ const UpdateOrganizationMemeberModal: React.FC<addTeamProps> = ({
 
   return (
     <section
-      className='flex items-center justify-center fixed max-w-full w-[100vw] h-screen left-0 top-0 bg-[#28283333] z-50'
+      className="flex items-center justify-center fixed max-w-full w-[100vw] h-screen left-0 top-0 bg-[#28283333] z-50"
       //  onClick={handleContainerClick}
     >
       <div
-        className='flex flex-col items-center justify-center absolute w-[32.29vw] h-[41.56vw] rounded-[1.56vw] bg-[#ffffff] z-10'
+        className="flex flex-col items-center justify-center absolute w-[32.29vw] h-[41.56vw] rounded-[1.56vw] bg-[#ffffff] z-10"
         style={modalStyle}
       >
-        <div className='w-full h-fit p-[1.35vw_1.09vw_1.15vw_1.09vw] pt-[1.35vw] px-[1.09vw] pb-[1.15vw]'>
-          <div className='flex items-center w-full justify-between'>
-            <h3 className='font-normal font-semibold text-[1.25vw] leading-[1.67vw] text-left text-[#282833]'>
+        <div className="w-full h-fit p-[1.35vw_1.09vw_1.15vw_1.09vw] pt-[1.35vw] px-[1.09vw] pb-[1.15vw]">
+          <div className="flex items-center w-full justify-between">
+            <h3 className="font-normal font-semibold text-[1.25vw] leading-[1.67vw] text-left text-[#282833]">
               Update User Infromation
             </h3>
             <a
               onClick={handleCloseModal}
-              className='flex items-center justify-center p-0 gap-[0.21vw] isolate w-[2.08vw] h-[2.08vw] bg-[#ffffff] border-[0.04vw] border-solid border-[#e0e0e9] rounded-[0.63vw] cursor-pointer hover:bg-[#f4f4fa] hover:border-[#b8b8cd]'
+              className="flex items-center justify-center p-0 gap-[0.21vw] isolate w-[2.08vw] h-[2.08vw] bg-[#ffffff] border-[0.04vw] border-solid border-[#e0e0e9] rounded-[0.63vw] cursor-pointer hover:bg-[#f4f4fa] hover:border-[#b8b8cd]"
             >
               <Image
                 src={Close}
-                className='text-[#282833] w-[0.83vw] h-[0.83vw]'
+                className="text-[#282833] w-[0.83vw] h-[0.83vw]"
                 width={16}
-                alt=''
+                alt=""
               />
             </a>
           </div>
 
           <form
-            className='flex flex-col items-center justify-center w-full mt-[2.19vw] relative'
+            className="flex flex-col items-center justify-center w-full mt-[2.19vw] relative"
             onSubmit={onSubmit}
           >
-            <div className='flex flex-col items-center justify-center w-full max-h-[30.52vw]'>
-              <div className='flex flex-col justify-center items-start w-full'>
+            <div className="flex flex-col items-center justify-center w-full max-h-[30.52vw]">
+              <div className="flex flex-col justify-center items-start w-full">
                 <div
-                  className='w-[5.21vw] h-[5.21vw] rounded-full bg-cover bg-center relative cursor-pointer group'
+                  className="w-[5.21vw] h-[5.21vw] rounded-full bg-cover bg-center relative cursor-pointer group"
                   style={{
                     backgroundImage: `url(${selectedImage || Profile.src})`,
                     backgroundPosition: "center center",
@@ -312,133 +315,133 @@ const UpdateOrganizationMemeberModal: React.FC<addTeamProps> = ({
                 >
                   {selectedImage && (
                     <button
-                      type='button'
+                      type="button"
                       onClick={handleImageRemove}
-                      className='hidden w-[5.21vw] h-[5.21vw] group-hover:flex items-center justify-center text-[#2424d1b2] hover:border-[#b4b4c8] hover:bg-[#f4f4fa00] p-2 rounded-full cursor-pointer border-[#E0E0E9] border hover:text-[#282833] absolute inset-0'
+                      className="hidden w-[5.21vw] h-[5.21vw] group-hover:flex items-center justify-center text-[#2424d1b2] hover:border-[#b4b4c8] hover:bg-[#f4f4fa00] p-2 rounded-full cursor-pointer border-[#E0E0E9] border hover:text-[#282833] absolute inset-0"
                     >
-                      <CiSquareRemove className='text-2xl' />
+                      <CiSquareRemove className="text-2xl" />
                     </button>
                   )}
                 </div>
 
-                <div className='flex items-center justify-start w-full mt-[1.04vw] space-x-[0.58vw] space-x-[0.32vw]'>
+                <div className="flex items-center justify-start w-full mt-[1.04vw] space-x-[0.58vw] space-x-[0.32vw]">
                   <a
                     onClick={handleUploadClick}
-                    className='p-[0.52vw_1.04vw] text-[#282833B2] font-normal text-[0.83vw] leading-[1vw] w-[4.79vw] h-[2.08vw] mx-[0.25vw] bg-[#ffffff] border-[0.05vw] border-solid border-[#e0e0e9] rounded-[0.78vw] flex-none grow-0 outline-none capitalize cursor-pointer hover:bg-[#f4f4fa] hover:border-[#b8b8cd] hover:text-very-dark-grayish-blue'
+                    className="p-[0.52vw_1.04vw] text-[#282833B2] font-normal text-[0.83vw] leading-[1vw] w-[4.79vw] h-[2.08vw] mx-[0.25vw] bg-[#ffffff] border-[0.05vw] border-solid border-[#e0e0e9] rounded-[0.78vw] flex-none grow-0 outline-none capitalize cursor-pointer hover:bg-[#f4f4fa] hover:border-[#b8b8cd] hover:text-very-dark-grayish-blue"
                   >
-                    <span className='text-center text-[#696970] font-normal w-full'>
+                    <span className="text-center text-[#696970] font-normal w-full">
                       upload
                     </span>
                   </a>
                   <input
-                    type='file'
-                    accept='image/*'
+                    type="file"
+                    accept="image/*"
                     ref={fileInputRef}
                     style={{ display: "none" }}
                     onChange={handleFileChange}
                   />
 
-                  <span className='font-normal text-[0.73vw] leading-normal text-[#98A2B3]'>
+                  <span className="font-normal text-[0.73vw] leading-normal text-[#98A2B3]">
                     Only use jpg, jpeg, png ({"<"} 2mb)
                   </span>
                 </div>
                 {imageError && (
-                  <p className='text-red-500 text-[0.73vw] mt-2'>
+                  <p className="text-red-500 text-[0.73vw] mt-2">
                     {imageError}
                   </p>
                 )}
               </div>
 
-              <legend className='flex flex-col justify-center items-start w-full mt-[1.56vw] relative'>
-                <div className='flex items-center space-x-[1.04vw] w-full'>
-                  <div className='flex flex-col items-start justify-center space-y-[0.73vw] w-full'>
+              <legend className="flex flex-col justify-center items-start w-full mt-[1.56vw] relative">
+                <div className="flex items-center space-x-[1.04vw] w-full">
+                  <div className="flex flex-col items-start justify-center space-y-[0.73vw] w-full">
                     <label
-                      htmlFor='name'
-                      className='p-[0vw_0.26vw] text-[0.94vw] flex-none grow-0'
+                      htmlFor="name"
+                      className="p-[0vw_0.26vw] text-[0.94vw] flex-none grow-0"
                     >
-                      <span className='font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833] flex-none grow-0'>
+                      <span className="font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833] flex-none grow-0">
                         First Name
                       </span>
                     </label>
 
                     <input
-                      type='name'
+                      type="name"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className='w-full h-[2.55vw] p-[0.51225vw_0.768vw] leading-[1vw] text-[0.83vw] font-normal text-[#282833] border-[0.051226vw] border-solid border-[#e0e0e9] rounded-[0.78vw] flex-none grow-0 focus:outline-none placeholder:text-[#9b9ba0]'
-                      placeholder='Enter first name'
+                      className="w-full h-[2.55vw] p-[0.51225vw_0.768vw] leading-[1vw] text-[0.83vw] font-normal text-[#282833] border-[0.051226vw] border-solid border-[#e0e0e9] rounded-[0.78vw] flex-none grow-0 focus:outline-none placeholder:text-[#9b9ba0]"
+                      placeholder="Enter first name"
                       required
                     />
                   </div>
 
-                  <div className='flex flex-col items-start justify-center space-y-[0.73vw] w-full'>
+                  <div className="flex flex-col items-start justify-center space-y-[0.73vw] w-full">
                     <label
-                      htmlFor='name'
-                      className='p-[0vw_0.26vw] flex-none grow-0'
+                      htmlFor="name"
+                      className="p-[0vw_0.26vw] flex-none grow-0"
                     >
-                      <span className='font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833] flex-none grow-0'>
+                      <span className="font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833] flex-none grow-0">
                         Last Name
                       </span>
                     </label>
 
                     <input
-                      type='name'
+                      type="name"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className='w-full h-[2.55vw] p-[0.51225vw_0.768vw] leading-[1vw] text-[0.83vw] font-normal text-[#282833] border-[0.051226vw] border-solid border-[#e0e0e9] rounded-[0.78vw] flex-none grow-0 focus:outline-none placeholder:text-[#9b9ba0]'
-                      placeholder='Enter last name'
+                      className="w-full h-[2.55vw] p-[0.51225vw_0.768vw] leading-[1vw] text-[0.83vw] font-normal text-[#282833] border-[0.051226vw] border-solid border-[#e0e0e9] rounded-[0.78vw] flex-none grow-0 focus:outline-none placeholder:text-[#9b9ba0]"
+                      placeholder="Enter last name"
                       required
                     />
                   </div>
                 </div>
 
-                <div className='flex flex-col items-start justify-center mt-[1.04vw] w-full'>
-                  <div className='flex flex-col items-start justify-center space-y-[0.73vw] w-full'>
+                <div className="flex flex-col items-start justify-center mt-[1.04vw] w-full">
+                  <div className="flex flex-col items-start justify-center space-y-[0.73vw] w-full">
                     <label
-                      htmlFor='name'
-                      className='p-[0vw_0.26vw] text-[0.94vw] flex-none grow-0'
+                      htmlFor="name"
+                      className="p-[0vw_0.26vw] text-[0.94vw] flex-none grow-0"
                     >
-                      <span className='font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833] flex-none grow-0'>
+                      <span className="font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833] flex-none grow-0">
                         Email
                       </span>
                     </label>
 
                     <input
-                      type='email'
+                      type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className='w-full h-[2.55vw] p-[0.51225vw_0.768vw] text-[0.83vw] font-normal leading-[1vw] text-[#282833] border-[0.983536px] border-solid border-[#e0e0e9] rounded-[0.78vw] flex-none grow-0 focus:outline-none placeholder:text-[#9b9ba0]'
-                      placeholder='Enter email here'
+                      className="w-full h-[2.55vw] p-[0.51225vw_0.768vw] text-[0.83vw] font-normal leading-[1vw] text-[#282833] border-[0.983536px] border-solid border-[#e0e0e9] rounded-[0.78vw] flex-none grow-0 focus:outline-none placeholder:text-[#9b9ba0]"
+                      placeholder="Enter email here"
                       required
                     />
                   </div>
                   {/* Select User */}
-                  <div className='flex flex-col items-start justify-center mt-[1.04vw] space-y-[0.73vw] w-full relative'>
+                  <div className="flex flex-col items-start justify-center mt-[1.04vw] space-y-[0.73vw] w-full relative">
                     <label
-                      htmlFor='name'
-                      className='p-[0vw_0.26vw] text-[0.94vw] flex-none grow-0'
+                      htmlFor="name"
+                      className="p-[0vw_0.26vw] text-[0.94vw] flex-none grow-0"
                     >
-                      <span className='font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833] flex-none grow-0'>
+                      <span className="font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833] flex-none grow-0">
                         Select User
                       </span>
                     </label>
 
                     <button
-                      type='button'
+                      type="button"
                       ref={selectUserbuttonRef}
                       onClick={toggleUserDropdown}
                       disabled={curruser.clientAccountType !== "ADMIN"}
-                      className='outline-none w-full h-[2.55vw] p-[0.51225vw_0.768vw] leading-normal text-[0.83vw] text-[#282833] border-[0.051226vw] border-solid border-[#e0e0e9] rounded-[0.78vw] flex items-center justify-between cursor-pointer grow-0 relative'
+                      className="outline-none w-full h-[2.55vw] p-[0.51225vw_0.768vw] leading-normal text-[0.83vw] text-[#282833] border-[0.051226vw] border-solid border-[#e0e0e9] rounded-[0.78vw] flex items-center justify-between cursor-pointer grow-0 relative"
                     >
                       <span
-                        className='pointer-events-none text-center flex items-center text-[#9b9ba0]'
+                        className="pointer-events-none text-center flex items-center text-[#9b9ba0]"
                         style={selectUserOptionStyle}
                       >
                         {selectedUser}
                       </span>
 
                       <Image
-                        className='cursor-pointer w-[0.83vw] h-[0.42vw] transition-transform duration-300'
+                        className="cursor-pointer w-[0.83vw] h-[0.42vw] transition-transform duration-300"
                         width={16}
                         src={Chevron}
                         style={{
@@ -446,21 +449,21 @@ const UpdateOrganizationMemeberModal: React.FC<addTeamProps> = ({
                             ? "rotate(-180deg)"
                             : "rotate(0deg)",
                         }}
-                        alt=''
+                        alt=""
                       />
                     </button>
 
                     {selectedUserDropdown && (
                       <ul
                         ref={dropdownRef}
-                        className='absolute top-full left-0 w-full flex flex-col items-center justify-center p-[0.52vw] gap-[0.52vw] max-h-[6.145vw] h-fit bg-[#ffffff] rounded-[0.78vw] font-normal text-[0.94vw] leading-[120%] flex-none grow-0 order-1 z-[1]'
+                        className="absolute top-full left-0 w-full flex flex-col items-center justify-center p-[0.52vw] gap-[0.52vw] max-h-[6.145vw] h-fit bg-[#ffffff] rounded-[0.78vw] font-normal text-[0.94vw] leading-[120%] flex-none grow-0 order-1 z-[1]"
                         style={selectStyle}
                       >
                         {memberType.map((member) => (
                           <li
                             key={member.value}
                             onClick={() => handleOptionClick(member.value)}
-                            className='w-full pl-[0.77vw] py-[0.94vw] h-[2.55vw] rounded-[0.78vw] font-normal text-[#696970] text-start flex items-center text-[0.94vw] cursor-pointer hover:bg-[#f4f4fa] hover:text-very-dark-grayish-blue'
+                            className="w-full pl-[0.77vw] py-[0.94vw] h-[2.55vw] rounded-[0.78vw] font-normal text-[#696970] text-start flex items-center text-[0.94vw] cursor-pointer hover:bg-[#f4f4fa] hover:text-very-dark-grayish-blue"
                           >
                             {member.label}
                           </li>
@@ -470,31 +473,31 @@ const UpdateOrganizationMemeberModal: React.FC<addTeamProps> = ({
                   </div>
 
                   {/* Team Role Option*/}
-                  <div className='flex flex-col items-start justify-center mt-[1.04vw] space-y-[0.73vw] w-full relative'>
+                  <div className="flex flex-col items-start justify-center mt-[1.04vw] space-y-[0.73vw] w-full relative">
                     <label
-                      htmlFor='name'
-                      className='p-[0vw_0.26vw] text-[0.94vw] flex-none grow-0'
+                      htmlFor="name"
+                      className="p-[0vw_0.26vw] text-[0.94vw] flex-none grow-0"
                     >
-                      <span className='font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833] flex-none grow-0'>
+                      <span className="font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833] flex-none grow-0">
                         Team Role
                       </span>
                     </label>
 
                     <button
-                      type='button'
+                      type="button"
                       ref={roleButtonRef}
                       onClick={toggleRoleDropdown}
-                      className='outline-none w-full h-[2.55vw] p-[0.51225vw_0.768vw] leading-normal text-[0.83vw] text-[#282833] border-[0.051226vw] border-solid border-[#e0e0e9] rounded-[0.78vw] flex items-center justify-between cursor-pointer grow-0 relative'
+                      className="outline-none w-full h-[2.55vw] p-[0.51225vw_0.768vw] leading-normal text-[0.83vw] text-[#282833] border-[0.051226vw] border-solid border-[#e0e0e9] rounded-[0.78vw] flex items-center justify-between cursor-pointer grow-0 relative"
                     >
                       <span
-                        className='pointer-events-none text-center flex items-center text-[#9b9ba0]'
+                        className="pointer-events-none text-center flex items-center text-[#9b9ba0]"
                         style={selectRoleOptionStyle}
                       >
                         {selectedRole}
                       </span>
 
                       <Image
-                        className='cursor-pointer w-[0.83vw] h-[0.42vw] transition-transform duration-300'
+                        className="cursor-pointer w-[0.83vw] h-[0.42vw] transition-transform duration-300"
                         width={16}
                         src={Chevron}
                         style={{
@@ -502,21 +505,21 @@ const UpdateOrganizationMemeberModal: React.FC<addTeamProps> = ({
                             ? "rotate(-180deg)"
                             : "rotate(0deg)",
                         }}
-                        alt=''
+                        alt=""
                       />
                     </button>
 
                     {selectedRoleDropdown && (
                       <ul
                         ref={dropdownRef}
-                        className='absolute top-full left-0 w-full flex flex-col items-center p-[0.52vw] gap-[0.52vw] max-h-[6.145vw] max-h-[10vw] bg-[#ffffff] rounded-[0.78vw] font-normal text-[0.94vw] leading-[120%] flex-none grow-0 order-1 z-[1] overflow-y-auto scrollbar-gutter-stable'
+                        className="absolute top-full left-0 w-full flex flex-col items-center p-[0.52vw] gap-[0.52vw] max-h-[6.145vw] max-h-[10vw] bg-[#ffffff] rounded-[0.78vw] font-normal text-[0.94vw] leading-[120%] flex-none grow-0 order-1 z-[1] overflow-y-auto scrollbar-gutter-stable"
                         style={selectStyle}
                       >
                         {memberRoles.map((role) => (
                           <li
                             key={role.value}
                             onClick={() => handleRoleClick(role.value)}
-                            className='w-full pl-[0.77vw] py-[0.94vw] h-[2.55vw] rounded-[0.78vw] font-normal text-[#696970] text-start flex items-center text-[0.94vw] cursor-pointer hover:bg-[#f4f4fa] hover:text-very-dark-grayish-blue hover:w-full'
+                            className="w-full pl-[0.77vw] py-[0.94vw] h-[2.55vw] rounded-[0.78vw] font-normal text-[#696970] text-start flex items-center text-[0.94vw] cursor-pointer hover:bg-[#f4f4fa] hover:text-very-dark-grayish-blue hover:w-full"
                           >
                             {role.label}
                           </li>
@@ -528,18 +531,18 @@ const UpdateOrganizationMemeberModal: React.FC<addTeamProps> = ({
               </legend>
             </div>
 
-            <div className='w-full mt-[2.08vw] space-x-[1.04vw] flex items-center justify-center'>
+            <div className="w-full mt-[2.08vw] space-x-[1.04vw] flex items-center justify-center">
               <button
                 onClick={handleCloseModal}
-                className='flex justify-center items-center p-[0.52vw_1.25vw] text-[#696970] text-[0.94vw] font-normal w-full h-[2.60vw] bg-[#ffffff] border border-solid border-[#e0e0e9] rounded-[0.78vw] grow cursor-pointer outline-none hover:bg-[#f4f4fa] hover:border-[#b8b8cd] hover:text-very-dark-grayish-blue'
+                className="flex justify-center items-center p-[0.52vw_1.25vw] text-[#696970] text-[0.94vw] font-normal w-full h-[2.60vw] bg-[#ffffff] border border-solid border-[#e0e0e9] rounded-[0.78vw] grow cursor-pointer outline-none hover:bg-[#f4f4fa] hover:border-[#b8b8cd] hover:text-very-dark-grayish-blue"
               >
                 Cancel
               </button>
               <button
-                type='submit'
-                className='flex justify-center items-center p-[0.52vw_1.25vw] w-full h-[2.60vw] bg-[#50589F] text-[#ffffff] text-[0.94vw] font-normal border border-solid border-[#e0e0e9] rounded-[0.78vw] grow cursor-pointer outline-none hover:bg-[#42498B]'
+                type="submit"
+                className="flex justify-center items-center p-[0.52vw_1.25vw] w-full h-[2.60vw] bg-[#50589F] text-[#ffffff] text-[0.94vw] font-normal border border-solid border-[#e0e0e9] rounded-[0.78vw] grow cursor-pointer outline-none hover:bg-[#42498B]"
               >
-                {submitting ? <ClipLoader size={18} color='#ffffff' /> : "Save"}
+                {submitting ? <ClipLoader size={18} color="#ffffff" /> : "Save"}
               </button>
             </div>
           </form>

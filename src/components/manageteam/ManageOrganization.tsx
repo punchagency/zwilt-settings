@@ -21,30 +21,35 @@ const ManageOrganization: React.FC<Props> = ({
   filteredMembers,
 }) => {
   const [currentModal, setCurrentModal] = useState<string | null>(null);
-  const [userToDelete, setUserToDelete] = useState<OrganizationMember["user"] | null>(null);
+  const [userToDelete, setUserToDelete] = useState<
+    OrganizationMember["user"] | null
+  >(null);
 
   const { setMembers } = useOrganizationMembers();
-  const { data, loading, error, refetch } = useQuery(GET_ORGANIZATION_MEMBERS);
+  const { data, loading, error, refetch } = useQuery(GET_ORGANIZATION_MEMBERS, {
+    context: { clientName: "tracker" },
+  });
 
   const [deleteMembersFromOrganization] = useMutation(
     DELETE_MEMBER_FROM_ORGANIZATION,
     {
+      context: { clientName: "tracker" },
       onCompleted: () => {
-     
         setUserToDelete(null);
       },
       onError: (error) => {
-        
         setCurrentModal(null);
         notifyErrorFxn("Failed to delete the profile. Please try again.");
-      }
-    }
+      },
+    },
   );
-  
+
   const handleDeleteMember = () => {
     if (!userToDelete) return;
     // Optimistically update the UI immediately
-    setMembers(prevMembers => prevMembers.filter(member => member?.user?._id !== userToDelete?._id));
+    setMembers((prevMembers) =>
+      prevMembers.filter((member) => member?.user?._id !== userToDelete?._id),
+    );
     notifySuccessFxn("Profile deleted successfully!");
     // Close the modal immediately for better UX
     setCurrentModal(null);
@@ -61,8 +66,6 @@ const ManageOrganization: React.FC<Props> = ({
 
   if (loading) return <Loader />;
   if (error) return <Error />;
-  
-
 
   return (
     <>
