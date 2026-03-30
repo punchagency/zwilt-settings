@@ -24,7 +24,14 @@ export interface TableBodyProps {
   deleteSingleTeamMember: (user: OrganizationMember["user"]) => void;
   onUpdateUser: (user: User, role: string) => void;
   isAdmin?: boolean;
+  appAccess?: string[];
+  seatStatus?: string;
 }
+
+const APP_LABEL: Record<string, string> = {
+  recruitment: "Recruitment",
+  tracker: "Tracker",
+};
 
 const TableBody: React.FC<TableBodyProps> = ({
   user,
@@ -35,6 +42,8 @@ const TableBody: React.FC<TableBodyProps> = ({
   deleteSingleTeamMember,
   onUpdateUser,
   isAdmin,
+  appAccess = [],
+  seatStatus = "ACTIVE",
 }) => {
   
   // Determine padding class
@@ -100,9 +109,33 @@ const TableBody: React.FC<TableBodyProps> = ({
         <td
           className={`text-[0.83vw] font-medium leading-[1vw] text-center text-very-dark-grayish-blue ${paddingClass}`}
         >
-          {capitalizeFirstLetter(role)}
+          <div className="flex flex-col items-center gap-[0.26vw]">
+            <span>{capitalizeFirstLetter(role)}</span>
+            {seatStatus === "SUSPENDED" && (
+              <span className="text-[0.65vw] font-semibold text-orange-500 bg-orange-50 px-[0.4vw] py-[0.1vw] rounded-full">
+                Suspended
+              </span>
+            )}
+          </div>
         </td>
-        {/* pt-[1.04vw] */}
+        <td
+          className={`${paddingClass}`}
+        >
+          <div className="flex items-center justify-center gap-[0.26vw] flex-wrap">
+            {appAccess.length === 0 ? (
+              <span className="text-[0.72vw] text-[#9b9ba0]">No apps</span>
+            ) : (
+              appAccess.map((app) => (
+                <span
+                  key={app}
+                  className="text-[0.65vw] font-medium px-[0.42vw] py-[0.1vw] rounded-full bg-[#eef0fb] text-[#50589F]"
+                >
+                  {APP_LABEL[app] ?? app}
+                </span>
+              ))
+            )}
+          </div>
+        </td>
         <td
           className={`text-[0.83vw] font-medium leading-[1vw] text-center text-very-dark-grayish-blue ${paddingClass}`}
         >

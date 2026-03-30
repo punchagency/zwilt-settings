@@ -5,7 +5,6 @@ export interface User {
   profile_img?: string;
   lastActive?: string;
   isDeleted?: boolean;
-  // ... other existing fields ...
 }
 
 export interface OrganizationMember {
@@ -14,5 +13,7 @@ export interface OrganizationMember {
   role: string;
   clientAccountType: string;
   profileStatus: string;
-  // ... other existing fields ...
-} 
+  appAccess: string[];
+  isBilledSeat: boolean;
+  seatStatus: 'ACTIVE' | 'SUSPENDED' | 'REMOVED';
+}

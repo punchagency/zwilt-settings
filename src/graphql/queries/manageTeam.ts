@@ -17,6 +17,9 @@ export const GET_ORGANIZATION_MEMBERS = gql`
         role
         clientAccountType
         profileStatus
+        appAccess
+        isBilledSeat
+        seatStatus
       }
     }
   }
@@ -37,6 +40,23 @@ export const GET_INVITED_USERS = gql`
         role
         clientAccountType
         profileStatus
+        appAccess
+        isBilledSeat
+        seatStatus
+      }
+    }
+  }
+`;
+
+export const GET_ORG_BILLING_PREVIEW = gql`
+  query GetOrgBillingPreview {
+    getOrgBillingPreview {
+      success
+      data {
+        seats
+        pricePerSeat
+        total
+        currency
       }
     }
   }

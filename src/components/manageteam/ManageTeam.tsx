@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import {
   GET_INVITED_USERS,
   GET_ORGANIZATION_MEMBERS,
+  GET_ORG_BILLING_PREVIEW,
 } from "@/graphql/queries/manageTeam";
 import PlusIcon from "@/assests/icons/plus.svg";
 import { OrganizationMember } from "./manageteam-role/user.interface";
@@ -54,6 +55,8 @@ const ManageTeam: React.FC = () => {
   });
 
   const { data: invitedUsersData } = useQuery(GET_INVITED_USERS);
+  const { data: billingData } = useQuery(GET_ORG_BILLING_PREVIEW);
+  const billing = billingData?.getOrgBillingPreview?.data;
 
   // Keep the memoized filters
   const filteredAdmins = useMemo(
@@ -193,6 +196,19 @@ const ManageTeam: React.FC = () => {
           </div>
         </div>
       </nav>
+
+      {billing && (
+        <div className="flex items-center justify-between px-[1.56vw] py-[0.78vw] bg-[#f4f4fa] border-b border-[#e0e0e9]">
+          <span className="text-[0.83vw] text-[#696970]">
+            <span className="font-semibold text-[#282833]">{billing.seats}</span> billed seat{billing.seats !== 1 ? "s" : ""}
+            &nbsp;&mdash;&nbsp;
+            <span className="font-semibold text-[#282833]">${billing.pricePerSeat.toFixed(2)}</span>/seat/month
+          </span>
+          <span className="text-[0.83vw] font-semibold text-[#50589F]">
+            Total: ${billing.total.toFixed(2)}/{billing.currency === "USD" ? "mo" : billing.currency}
+          </span>
+        </div>
+      )}
 
       <ManageTeamToggleTab
         activeTab={activeTab}

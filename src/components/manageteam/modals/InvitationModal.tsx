@@ -4,7 +4,6 @@ import { useMutation, useQuery } from "@apollo/client";
 import { GET_INVITED_USERS } from "@/graphql/queries/manageTeam";
 import { INVITE_USER } from "@/graphql/mutations/manageTeam";
 import { notifyErrorFxn, notifySuccessFxn } from "utils/toast-fxn";
-import { toast } from "react-toastify";
 import Close from "@/assests/icons/close.svg";
 import Chevron from "@/assests/icons/chevron.svg";
 import { memberRoles, memberType } from "./OrganizationRoles";
@@ -23,17 +22,17 @@ interface User {
   clientAccountType: string;
   profileStatus: string;
 }
+
 interface addTeamProps {
   setCurrentModal: React.Dispatch<React.SetStateAction<string | null>>;
   handleCloseModal: () => void;
   filteredInvitedUsers: User[];
 }
 
-interface InviteUserInput {
-  email: string;
-  role: string;
-  clientAccountType: string;
-}
+const APP_OPTIONS = [
+  { id: "recruitment", label: "Recruitment" },
+  { id: "tracker", label: "Tracker" },
+];
 
 const InvitationModal: React.FC<addTeamProps> = ({
   setCurrentModal,
@@ -45,13 +44,11 @@ const InvitationModal: React.FC<addTeamProps> = ({
   const [selectedUserDropdown, setSelectedUserDropdown] = useState(false);
   const [selectedRole, setSelectedRole] = useState("Select an option");
   const [selectedRoleDropdown, setSelectedRoleDropdown] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [appAccess, setAppAccess] = useState<string[]>([]);
   const [rotated, setRotated] = useState(false);
   const [isRotated, setIsRotated] = useState(false);
 
-  const { data, loading, error } = useQuery(GET_INVITED_USERS, {
-    context: { clientName: "tracker" },
-  });
+  const { data } = useQuery(GET_INVITED_USERS);
 
   const selectUserbuttonRef = useRef<HTMLButtonElement>(null);
   const roleButtonRef = useRef<HTMLButtonElement>(null);
@@ -73,11 +70,8 @@ const InvitationModal: React.FC<addTeamProps> = ({
         setIsRotated(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const selectOptionStyle: React.CSSProperties = {
@@ -88,24 +82,16 @@ const InvitationModal: React.FC<addTeamProps> = ({
     color: selectedRole === "Select an option" ? "#9b9ba0" : "#282833",
   };
 
-  const user = data?.getInvitedUsers?.data.find(
-    (member: any) => member?.user?.email === email,
-  );
-
   const [inviteUser] = useMutation(INVITE_USER, {
-    context: { clientName: "tracker" },
-    update(cache, { data }) {
+    update(cache, _) {
       try {
-        const existingData = cache.readQuery<any>({
-          query: GET_INVITED_USERS,
-        });
-
+        const existingData = cache.readQuery<any>({ query: GET_INVITED_USERS });
         const newInvitedUser = {
           __typename: "InvitedUser",
           _id: `temp-${Date.now()}`,
           user: {
             __typename: "User",
-            email: email,
+            email,
             name: email.split("@")[0],
             profile_img: null,
             createdAt: null,
@@ -113,23 +99,21 @@ const InvitationModal: React.FC<addTeamProps> = ({
           role: selectedRole,
           clientAccountType: selectedUser === "Admin User" ? "ADMIN" : "MEMBER",
           profileStatus: "pending",
+          appAccess,
+          isBilledSeat: true,
+          seatStatus: "ACTIVE",
         };
-
-        // Match the query structure with success and data fields
         cache.writeQuery({
           query: GET_INVITED_USERS,
           data: {
             getInvitedUsers: {
               success: true,
-              data: [
-                ...(existingData?.getInvitedUsers?.data || []),
-                newInvitedUser,
-              ],
+              data: [...(existingData?.getInvitedUsers?.data || []), newInvitedUser],
             },
           },
         });
-      } catch (error) {
-        console.error("Cache update error:", error);
+      } catch (err) {
+        console.error("Cache update error:", err);
       }
     },
     onCompleted: () => {
@@ -142,6 +126,12 @@ const InvitationModal: React.FC<addTeamProps> = ({
     refetchQueries: [{ query: GET_INVITED_USERS }],
   });
 
+  const toggleAppAccess = (appId: string) => {
+    setAppAccess((prev) =>
+      prev.includes(appId) ? prev.filter((a) => a !== appId) : [...prev, appId]
+    );
+  };
+
   const handleSendInvite = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -150,6 +140,10 @@ const InvitationModal: React.FC<addTeamProps> = ({
       selectedRole === "Select an option"
     ) {
       notifyErrorFxn("Please select both user type and role");
+      return;
+    }
+    if (appAccess.length === 0) {
+      notifyErrorFxn("Please select at least one app");
       return;
     }
     if (filteredInvitedUsers.some((user) => user.user.email === email)) {
@@ -164,8 +158,8 @@ const InvitationModal: React.FC<addTeamProps> = ({
           input: {
             email,
             role: selectedRole,
-            clientAccountType:
-              selectedUser === "Admin User" ? "ADMIN" : "MEMBER",
+            clientAccountType: selectedUser === "Admin User" ? "ADMIN" : "MEMBER",
+            appAccess,
           },
         },
       });
@@ -204,37 +198,21 @@ const InvitationModal: React.FC<addTeamProps> = ({
     setRotated(false);
   };
 
-  // Handle click outside the modal
-  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      handleCloseModal();
-    }
-  };
-
   return (
-    <section
-      className="flex items-center justify-center fixed max-w-full w-[100vw] h-screen left-0 top-0 bg-[#28283333] z-50"
-      // onClick={handleContainerClick}
-    >
+    <section className="flex items-center justify-center fixed max-w-full w-[100vw] h-screen left-0 top-0 bg-[#28283333] z-50">
       <div
-        className="p-[1.35vw_1.09vw_1.15vw_1.09vw] absolute w-[32.29vw] min-h-[25.99vw] rounded-[1.56vw] bg-[#ffffff] z-10"
+        className="p-[1.35vw_1.09vw_1.15vw_1.09vw] absolute w-[32.29vw] rounded-[1.56vw] bg-[#ffffff] z-10"
         style={modalStyle}
       >
         <div className="flex items-center w-full justify-between">
-          <h3 className="font-normal font-semibold text-[1.25vw] leading-[1.67vw] text-left text-[#282833]">
+          <h3 className="font-semibold text-[1.25vw] leading-[1.67vw] text-[#282833]">
             Invite User
           </h3>
-
           <a
             onClick={handleCloseModal}
             className="flex items-center justify-center p-0 gap-[0.21vw] isolate w-[2.08vw] h-[2.08vw] bg-[#ffffff] border-[0.04vw] border-solid border-[#e0e0e9] rounded-[0.63vw] cursor-pointer hover:bg-[#f4f4fa] hover:border-[#b8b8cd]"
           >
-            <Image
-              src={Close}
-              className="text-[#282833] w-[0.83vw] h-[0.83vw]"
-              width={16}
-              alt=""
-            />
+            <Image src={Close} className="w-[0.83vw] h-[0.83vw]" width={16} alt="" />
           </a>
         </div>
 
@@ -242,72 +220,57 @@ const InvitationModal: React.FC<addTeamProps> = ({
           className="flex flex-col items-center justify-center w-full mt-[1.56vw] relative"
           onSubmit={handleSendInvite}
         >
-          <legend className="flex flex-col items-start justify-center w-full h-[15.68vw] relative">
-            <div className="flex flex-col items-start justify-center space-y-[0.73vw] w-full">
-              <label
-                htmlFor="name"
-                className="p-[0vw_0.26vw] text-[0.94vw] flex-none grow-0"
-              >
-                <span className="font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833] flex-none grow-0">
+          <div className="flex flex-col w-full space-y-[1.04vw]">
+            {/* Email */}
+            <div className="flex flex-col space-y-[0.73vw]">
+              <label className="p-[0vw_0.26vw]">
+                <span className="font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833]">
                   Email
                 </span>
               </label>
-
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-[2.55vw] p-[0.51225vw_0.768vw] text-[0.83vw] font-normal leading-[1vw] text-[#282833] border-[0.983536px] border-solid border-[#e0e0e9] rounded-[0.78vw] flex-none grow-0 focus:outline-none placeholder:text-[#9b9ba0]"
+                className="w-full h-[2.55vw] p-[0.51vw_0.77vw] text-[0.83vw] text-[#282833] border border-[#e0e0e9] rounded-[0.78vw] focus:outline-none placeholder:text-[#9b9ba0]"
                 placeholder="Enter email here"
                 required
               />
             </div>
 
-            <div className="flex flex-col items-start justify-center mt-[1.04vw] space-y-[0.73vw] w-full relative">
-              <label
-                htmlFor="name"
-                className="p-[0vw_0.26vw] text-[0.94vw] flex-none grow-0"
-              >
-                <span className="font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833] flex-none grow-0">
+            {/* User Type */}
+            <div className="flex flex-col space-y-[0.73vw] relative">
+              <label className="p-[0vw_0.26vw]">
+                <span className="font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833]">
                   Select User
                 </span>
               </label>
-
               <button
                 type="button"
                 ref={selectUserbuttonRef}
                 onClick={toggleUserDropdown}
-                className="outline-none w-full h-[2.55vw] p-[0.51225vw_0.768vw] leading-normal text-[0.83vw] text-[#282833] border-[0.051226vw] border-solid border-[#e0e0e9] rounded-[0.78vw] flex items-center justify-between cursor-pointer grow-0 relative"
+                className="outline-none w-full h-[2.55vw] p-[0.51vw_0.77vw] text-[0.83vw] text-[#282833] border border-[#e0e0e9] rounded-[0.78vw] flex items-center justify-between cursor-pointer"
               >
-                <span
-                  className="pointer-events-none text-center flex items-center text-[#9b9ba0]"
-                  style={selectOptionStyle}
-                >
-                  {selectedUser}
-                </span>
-
+                <span style={selectOptionStyle}>{selectedUser}</span>
                 <Image
-                  className="cursor-pointer w-[0.83vw] h-[0.83vw] h-[0.42vw] transition-transform duration-300"
+                  className="w-[0.83vw] h-[0.83vw] transition-transform duration-300"
                   width={16}
                   src={Chevron}
-                  style={{
-                    transform: isRotated ? "rotate(-180deg)" : "rotate(0deg)",
-                  }}
+                  style={{ transform: isRotated ? "rotate(-180deg)" : "rotate(0deg)" }}
                   alt=""
                 />
               </button>
-
               {selectedUserDropdown && (
                 <ul
                   ref={dropdownRef}
-                  className="absolute top-full left-0 w-full flex flex-col items-center justify-center p-[0.52vw] gap-[0.52vw] max-h-[6.145vw] h-fit bg-[#ffffff] rounded-[0.78vw] font-normal text-[0.94vw] leading-[120%] flex-none grow-0 order-1 z-[1]"
+                  className="absolute top-full left-0 w-full flex flex-col p-[0.52vw] gap-[0.52vw] bg-[#ffffff] rounded-[0.78vw] text-[0.94vw] z-10"
                   style={selectStyle}
                 >
                   {memberType.map((member) => (
                     <li
                       key={member.value}
                       onClick={() => handleOptionClick(member.value)}
-                      className="w-full pl-[0.77vw] py-[0.94vw] h-[2.55vw] rounded-[0.78vw] font-normal text-[#696970] text-start flex items-center text-[0.94vw] cursor-pointer hover:bg-[#f4f4fa] hover:text-very-dark-grayish-blue"
+                      className="w-full pl-[0.77vw] py-[0.94vw] h-[2.55vw] rounded-[0.78vw] text-[#696970] flex items-center cursor-pointer hover:bg-[#f4f4fa]"
                     >
                       {member.label}
                     </li>
@@ -316,51 +279,39 @@ const InvitationModal: React.FC<addTeamProps> = ({
               )}
             </div>
 
-            <div className="flex flex-col items-start justify-center mt-[1.04vw] space-y-[0.73vw] w-full relative">
-              <label
-                htmlFor="name"
-                className="p-[0vw_0.26vw] text-[0.94vw] flex-none grow-0"
-              >
-                <span className="font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833] flex-none grow-0">
+            {/* Role */}
+            <div className="flex flex-col space-y-[0.73vw] relative">
+              <label className="p-[0vw_0.26vw]">
+                <span className="font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833]">
                   Team Role
                 </span>
               </label>
-
               <button
                 type="button"
                 ref={roleButtonRef}
                 onClick={toggleRoleDropdown}
-                className="outline-none w-full h-[2.55vw] p-[0.51225vw_0.768vw] leading-normal text-[0.83vw] text-[#282833] border-[0.051226vw] border-solid border-[#e0e0e9] rounded-[0.78vw] flex items-center justify-between cursor-pointer grow-0 relative"
+                className="outline-none w-full h-[2.55vw] p-[0.51vw_0.77vw] text-[0.83vw] text-[#282833] border border-[#e0e0e9] rounded-[0.78vw] flex items-center justify-between cursor-pointer"
               >
-                <span
-                  className="pointer-events-none text-center flex items-center text-[#363641]"
-                  style={selectRoleOptionStyle}
-                >
-                  {selectedRole}
-                </span>
-
+                <span style={selectRoleOptionStyle}>{selectedRole}</span>
                 <Image
-                  className="cursor-pointer w-[0.83vw] h-[0.83vw] h-[0.42vw] transition-transform duration-300"
+                  className="w-[0.83vw] h-[0.83vw] transition-transform duration-300"
                   width={16}
                   src={Chevron}
-                  style={{
-                    transform: rotated ? "rotate(-180deg)" : "rotate(0deg)",
-                  }}
+                  style={{ transform: rotated ? "rotate(-180deg)" : "rotate(0deg)" }}
                   alt=""
                 />
               </button>
-
               {selectedRoleDropdown && (
                 <ul
                   ref={dropdownRef}
-                  className="absolute top-full left-0 w-full flex flex-col items-center p-[0.52vw] gap-[0.52vw] max-h-[6.145vw] max-h-[10vw] bg-[#ffffff] rounded-[0.78vw] font-normal text-[0.94vw] leading-[120%] flex-none grow-0 order-1 z-[1] overflow-y-auto scrollbar-gutter-stable"
+                  className="absolute top-full left-0 w-full flex flex-col p-[0.52vw] gap-[0.52vw] max-h-[10vw] bg-[#ffffff] rounded-[0.78vw] text-[0.94vw] z-10 overflow-y-auto"
                   style={selectStyle}
                 >
                   {memberRoles.map((role) => (
                     <li
                       key={role.value}
                       onClick={() => handleRoleClick(role.value)}
-                      className="w-full pl-[0.77vw] py-[0.94vw] h-[2.55vw] rounded-[0.78vw] font-normal text-[#696970] text-start flex items-center text-[0.94vw] cursor-pointer hover:bg-[#f4f4fa] hover:text-very-dark-grayish-blue hover:w-full"
+                      className="w-full pl-[0.77vw] py-[0.94vw] h-[2.55vw] rounded-[0.78vw] text-[#696970] flex items-center cursor-pointer hover:bg-[#f4f4fa]"
                     >
                       {role.label}
                     </li>
@@ -368,18 +319,47 @@ const InvitationModal: React.FC<addTeamProps> = ({
                 </ul>
               )}
             </div>
-          </legend>
+
+            {/* App Access */}
+            <div className="flex flex-col space-y-[0.73vw]">
+              <label className="p-[0vw_0.26vw]">
+                <span className="font-semibold text-[0.94vw] leading-[1.25vw] text-[#282833]">
+                  App Access
+                </span>
+                <span className="ml-[0.4vw] text-[0.78vw] text-[#9b9ba0]">
+                  $99.99/seat/month
+                </span>
+              </label>
+              <div className="flex items-center gap-[1.04vw]">
+                {APP_OPTIONS.map((app) => (
+                  <label
+                    key={app.id}
+                    className="flex items-center gap-[0.42vw] cursor-pointer select-none"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={appAccess.includes(app.id)}
+                      onChange={() => toggleAppAccess(app.id)}
+                      className="w-[0.94vw] h-[0.94vw] accent-[#50589F] cursor-pointer"
+                    />
+                    <span className="text-[0.83vw] text-[#282833]">{app.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
 
           <div className="w-full mt-[2.08vw] space-x-[1.04vw] flex items-center justify-center">
             <button
+              type="button"
               onClick={handleCloseModal}
-              className="flex justify-center items-center p-[0.52vw_1.25vw] text-[#696970] text-[0.94vw] font-normal w-full h-[2.60vw] bg-[#ffffff] border border-solid border-[#e0e0e9] rounded-[0.78vw] grow cursor-pointer outline-none hover:bg-[#f4f4fa] hover:border-[#b8b8cd] hover:text-very-dark-grayish-blue"
+              className="flex justify-center items-center p-[0.52vw_1.25vw] text-[#696970] text-[0.94vw] w-full h-[2.60vw] bg-[#ffffff] border border-[#e0e0e9] rounded-[0.78vw] cursor-pointer outline-none hover:bg-[#f4f4fa]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex justify-center items-center p-[0.52vw_1.25vw] w-full h-[2.60vw] bg-[#50589F] text-[#ffffff] text-[0.94vw] font-normal border border-solid border-[#e0e0e9] rounded-[0.78vw] grow cursor-pointer outline-none hover:bg-[#42498B]"
+              className="flex justify-center items-center p-[0.52vw_1.25vw] w-full h-[2.60vw] bg-[#50589F] text-[#ffffff] text-[0.94vw] border border-[#e0e0e9] rounded-[0.78vw] cursor-pointer outline-none hover:bg-[#42498B]"
             >
               Invite
             </button>
@@ -398,5 +378,4 @@ const modalStyle: React.CSSProperties = {
 
 const selectStyle: React.CSSProperties = {
   boxShadow: "0px 0px 20px rgba(80, 88, 159, 0.1)",
-  zIndex: 1,
 };

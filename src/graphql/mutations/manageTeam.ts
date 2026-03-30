@@ -12,6 +12,9 @@ export const ADD_MEMBER_TO_ORGANIZATION = gql`
         }
         role
         clientAccountType
+        appAccess
+        isBilledSeat
+        seatStatus
       }
     }
   }
@@ -55,7 +58,6 @@ export const INVITE_USER = gql`
   mutation InviteUser($input: InviteUserInput!) {
     inviteUser(input: $input)
   }
-
 `;
 
 export const CANCEL_INVITATION = gql`
@@ -67,5 +69,42 @@ export const CANCEL_INVITATION = gql`
 export const ACCEPT_INVITE = gql`
   mutation AcceptInvite($userId: String) {
     acceptInvite(userId: $userId)
+  }
+`;
+
+export const UPDATE_SEAT_APP_ACCESS = gql`
+  mutation UpdateSeatAppAccess($clientId: String!, $appAccess: [String!]!) {
+    updateSeatAppAccess(clientId: $clientId, appAccess: $appAccess) {
+      success
+      data {
+        _id
+        appAccess
+        seatStatus
+      }
+    }
+  }
+`;
+
+export const SUSPEND_SEAT = gql`
+  mutation SuspendSeat($clientId: String!) {
+    suspendSeat(clientId: $clientId) {
+      success
+      data {
+        _id
+        seatStatus
+      }
+    }
+  }
+`;
+
+export const REACTIVATE_SEAT = gql`
+  mutation ReactivateSeat($clientId: String!) {
+    reactivateSeat(clientId: $clientId) {
+      success
+      data {
+        _id
+        seatStatus
+      }
+    }
   }
 `;
