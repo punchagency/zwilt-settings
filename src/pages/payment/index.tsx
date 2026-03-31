@@ -13,6 +13,11 @@ import useUser from "utils/recoil_store/hooks/use-user-state";
 import { GetAIUsageDashboard } from "@/graphql/queries/aiCredits";
 import SubscriptionTiers from "@/components/ai-credits/SubscriptionTiers";
 import { Skeleton } from "@mui/material";
+import {
+  GET_ORG_BILLING_PREVIEW,
+  GET_ORGANIZATION_MEMBERS,
+} from "@/graphql/queries/manageTeam";
+import { get_invoices } from "@/graphql/queries/invoices";
 
 const customActiveUnderlineStyle: React.CSSProperties = {
   color: "#282833",
@@ -42,23 +47,33 @@ const BillingSummary: React.FC = () => {
     },
   );
 
-  const billingData = [
+  const { data: orgBillingData, loading: orgBillingLoading } = useQuery(
+    GET_ORG_BILLING_PREVIEW,
     {
-      product: "Zwilt Tracker",
-      amount: "USD $52.00",
-      image: "https://picsum.photos/200/300",
+      fetchPolicy: "network-only",
     },
+  );
+
+  const { data: invoicesData, loading: invoicesLoading } = useQuery(
+    get_invoices,
     {
-      product: "Recrowdly",
-      amount: "USD $32.00",
-      image: "https://picsum.photos/200/300",
+      variables: { clientId: organizationId },
+      skip: !organizationId,
+      fetchPolicy: "network-only",
     },
+  );
+
+  const { data: membersData, loading: membersLoading } = useQuery(
+    GET_ORGANIZATION_MEMBERS,
     {
-      product: "Pantrei",
-      amount: "USD $18.00",
-      image: "https://picsum.photos/200/300",
+      fetchPolicy: "network-only",
     },
-  ];
+  );
+
+  const billedMembers =
+    membersData?.getOrganizationMembers?.data?.filter(
+      (m: any) => m.isBilledSeat,
+    ) || [];
 
   useEffect(() => {
     if (query.tab) {
@@ -79,9 +94,19 @@ const BillingSummary: React.FC = () => {
   };
 
   const handleDownloadCSV = () => {
-    const csvRows = [Object.keys(billingData[0]).join(",")];
+    if (!orgBillingData?.getOrgBillingPreview?.data) return;
 
-    for (const row of billingData) {
+    const data = [
+      {
+        product: "Zwilt Tracker",
+        amount: `USD $${orgBillingData.getOrgBillingPreview.data.total.toFixed(2)}`,
+        seats: orgBillingData.getOrgBillingPreview.data.seats,
+      },
+    ];
+
+    const csvRows = [Object.keys(data[0]).join(",")];
+
+    for (const row of data) {
       const values = Object.values(row);
       csvRows.push(values.join(","));
     }
@@ -260,63 +285,71 @@ const BillingSummary: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="w-full relative">
-                      <tr className="w-full border-b border-[#E0E0E9]">
-                        <td className="text-start py-[1.04vw]">
-                          <span className="text-[0.83vw] font-medium text-left text-[#6F6F76]">
-                            June 1 - June 30, 2024
-                          </span>
-                        </td>
+                      {invoicesLoading ? (
+                        <tr>
+                          <td colSpan={4} className="py-4 text-center">
+                            <Skeleton height={100} />
+                          </td>
+                        </tr>
+                      ) : (
+                        invoicesData?.getInvoices?.data?.map((invoice: any) => (
+                          <tr
+                            key={invoice._id}
+                            className="w-full border-b border-[#E0E0E9]"
+                          >
+                            <td className="text-start py-[1.04vw]">
+                              <span className="text-[0.83vw] font-medium text-left text-[#6F6F76]">
+                                {new Date(
+                                  invoice.createdAtz,
+                                ).toLocaleDateString("en-US", {
+                                  month: "long",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </span>
+                            </td>
 
-                        <td className="flex items-center justify-end py-[1.04vw]">
-                          <span className="cursor-pointer text-[#98A2B3] text-[0.83vw]   cursor-pointer text-[#17B26A]  -mr-[0.02vw] ml-[5vw] text-[0.83vw] flex items-center justify-center  w-[4.69vw] h-[1.56vw] border border-[#d0d5dd] bg-[#f2f4f7] rounded-[2.6vw] p-[0.78vw] ">
-                            Pending
-                          </span>
-                        </td>
+                            <td className="flex items-center justify-end py-[1.04vw]">
+                              <span
+                                className={`cursor-pointer text-[0.83vw] flex items-center justify-center w-[4.69vw] h-[1.56vw] border rounded-[2.6vw] p-[0.78vw] ml-[5vw] -mr-[0.02vw] ${
+                                  invoice.status?.toLowerCase() === "paid"
+                                    ? "text-[#17B26A] border-[#abefc6] bg-[#dcfae6]"
+                                    : "text-[#98A2B3] border-[#d0d5dd] bg-[#f2f4f7]"
+                                }`}
+                              >
+                                {invoice.status}
+                              </span>
+                            </td>
 
-                        <td className="text-right py-[1.04vw]">
-                          <span className="text-[0.83vw] font-medium text-very-dark-grayish-blue">
-                            Ends on 9876
-                          </span>
-                        </td>
+                            <td className="text-right py-[1.04vw]">
+                              <span className="text-[0.83vw] font-medium text-very-dark-grayish-blue">
+                                {invoice.paymentIntentId
+                                  ? `PI-${invoice.paymentIntentId.slice(-4)}`
+                                  : "N/A"}
+                              </span>
+                            </td>
 
-                        <td className="text-right py-[1.04vw]">
-                          <span className="text-[0.83vw] mr-[1vw] font-medium text-very-dark-grayish-blue">
-                            USD $94.32
-                          </span>
-                        </td>
-                      </tr>
-                      <tr className="w-full border-b border-[#E0E0E9]">
-                        <td className="text-start py-[1.04vw]">
-                          <span className="text-[0.83vw] font-medium text-left text-[#6F6F76]">
-                            April 1 - June 30, 2024
-                          </span>
-                        </td>
-
-                        <td className="flex items-center justify-end py-[1.04vw]">
-                          <span className="cursor-pointer text-[#17B26A] text-[0.83vw] mr-[0.8vw] flex items-center justify-center text-center w-[3.28vw] h-[1.56vw] border border-[#abefc6]  bg-[#dcfae6] rounded-[2.6vw] p-[0.78vw]">
-                            Paid
-                          </span>
-                        </td>
-
-                        <td className="text-right py-[1.04vw]">
-                          <span className="text-[0.83vw] font-medium text-very-dark-grayish-blue">
-                            Ends on 5892
-                          </span>
-                        </td>
-
-                        <td className="text-right  py-[1.04vw]">
-                          <span className="text-[0.83vw] mr-[1vw] font-medium text-left text-very-dark-grayish-blue">
-                            USD $63.20
-                          </span>
-                        </td>
-                      </tr>
+                            <td className="text-right py-[1.04vw]">
+                              <span className="text-[0.83vw] mr-[1vw] font-medium text-very-dark-grayish-blue">
+                                USD ${(invoice.amount / 100).toFixed(2)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
 
                 <div className="w-full pl-[1.09vw] -mt-[0.5vw] pb-[0.8vw]">
                   <h2 className="text-[1.67vw] font-semibold text-very-dark-grayish-blue">
-                    Grand Total: <span>USD $ 157.52 </span>
+                    Grand Total:{" "}
+                    <span>
+                      USD ${" "}
+                      {orgBillingData?.getOrgBillingPreview?.data?.total?.toFixed(
+                        2,
+                      ) || "0.00"}{" "}
+                    </span>
                   </h2>
                 </div>
               </div>
@@ -333,7 +366,7 @@ const BillingSummary: React.FC = () => {
                   <h2 className="flex items-center text-center font-semibold text-[0.94vw] text-very-dark-grayish-blue">
                     Total Active Services
                     <span className="ml-[0.36vw] cursor-pointer w-[1.56vw] font-normal h-[1.25vw] text-[0.83vw] py-[0.42vw] px-[0.52vw] rounded-[2.60vw] bg-very-dark-grayish-blue text-[#fff] text-center flex items-center justify-center">
-                      3
+                      {orgBillingData?.getOrgBillingPreview?.data?.seats || 0}
                     </span>
                   </h2>
                   <p className="mt-[0.36vw] font-medium text-[0.83vw] text-[#6F6F76]">
@@ -398,7 +431,10 @@ const BillingSummary: React.FC = () => {
 
                         <td className="text-center py-[1.04vw]">
                           <span className="text-[0.83vw] font-medium text-left  ml-[5.5vw]  text-very-dark-grayish-blue">
-                            USD $82.00
+                            USD $
+                            {orgBillingData?.getOrgBillingPreview?.data?.total?.toFixed(
+                              2,
+                            ) || "0.00"}
                           </span>
                         </td>
                       </tr>

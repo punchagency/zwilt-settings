@@ -106,6 +106,7 @@ const useUserPageGraphql = () => {
           date: formatDate(data.createdAt),
           checked: false,
           id: data._id,
+          isBilledSeat: data.isBilledSeat,
         };
 
         return userObj;

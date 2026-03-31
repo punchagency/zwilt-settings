@@ -471,6 +471,7 @@ const Users: React.FC = () => {
               name: `${data.firstName} ${data.lastName}`,
               image: data.image,
               id: data.id,
+              isBilledSeat: data.isBilledSeat,
             },
             numOfProjects:
               data.projectList?.length || data.projects?.length || 0,
@@ -585,7 +586,21 @@ const Users: React.FC = () => {
             }
           >
             <AvatarP img={value.image} initial={value.name} />
-            {value.name}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                justifyContent: "center",
+              }}
+            >
+              <span>{value.name}</span>
+              {value.isBilledSeat && (
+                <span className="text-[0.625vw] bg-[#E8F5E9] text-[#2E7D32] px-[0.4vw] py-[0.1vw] rounded-[0.2vw] mt-[0.2vw] font-medium border border-[#A5D6A7]">
+                  Billed Seat
+                </span>
+              )}
+            </div>
           </UserNameWrapper>
         );
       },

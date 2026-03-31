@@ -28,12 +28,16 @@ let apolloClient: ApolloClient<any> | null;
 
 export const APOLLO_STATE_PROP_NAME = "__APOLLO_STATE__";
 
+const isLocal = process.env.NEXT_PUBLIC_NODE_ENV === "local";
+const defaultLocalUrl = "http://localhost:5005/graphql";
+
 const aiCreditsUrl =
-  process.env.NEXT_PUBLIC_ZWILT_SERVER || "https://api.zwilt.com/graphql";
+  process.env.NEXT_PUBLIC_ZWILT_SERVER ||
+  (isLocal ? defaultLocalUrl : "https://api.zwilt.com/graphql");
 
 function createApolloClient(headers?: any) {
   const httpLink = new HttpLink({
-    uri: `${apiUrl}/graphql`,
+    uri: isLocal ? defaultLocalUrl : `${apiUrl}/graphql`,
     fetch,
     credentials: "include",
     headers,
@@ -47,7 +51,7 @@ function createApolloClient(headers?: any) {
   });
 
   const trackerLink = new HttpLink({
-    uri: "https://trackerserver.zwilt.com/graphql",
+    uri: isLocal ? defaultLocalUrl : "https://trackerserver.zwilt.com/graphql",
     fetch,
     credentials: "include",
     headers,
