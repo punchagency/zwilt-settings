@@ -3,50 +3,70 @@ import {
   DELETE_MULTIPLE_USERS,
   DELETE_USER,
   EDIT_USER,
-  INVITE_USER,
+  INVITE_USER as TRACKER_INVITE_USER,
   UPDATE_MULTIPLE_USERS,
 } from "@/graphql/mutations/user";
 import { GET_PROJECTS_DATA, GET_USERS } from "@/graphql/queries/user";
+import {
+  GET_ORGANIZATION_MEMBERS,
+  GET_INVITED_USERS,
+} from "@/graphql/queries/manageTeam";
+import {
+  DELETE_MEMBER_FROM_ORGANIZATION,
+  SUSPEND_SEAT,
+  REACTIVATE_SEAT,
+  INVITE_USER,
+} from "@/graphql/mutations/manageTeam";
 import { useLazyQuery, useMutation } from "@apollo/react-hooks";
 import { useCallback, useEffect, useMemo } from "react";
 import useUserPage from "./use-user-page";
 import userAtom from "@/atoms/user-atom";
 import { useRecoilState } from "recoil";
 
+const BILLABLE_ROLES = ["ORGANIZATION_OWNER", "ORGANIZATION_MANAGER"];
+const OTHER_APPS = [
+  "sales",
+  "recruit",
+  "market",
+  "recruitment",
+  "sell",
+  "store",
+];
+
 const useUserPageGraphql = () => {
   const [user, setUser] = useRecoilState(userAtom);
   const { updateUserPage, userPageState, unSelectUsers, getUserInfo } =
     useUserPage();
 
-  const [getUsers, { loading, error, data }] = useLazyQuery(GET_USERS, {
-    context: { clientName: "tracker" },
-    variables: {
-      input: {
-        status: "ACTIVE",
-      },
-    },
-
+  const [
+    getMembers,
+    { loading: membersLoading, error: membersError, data: membersData },
+  ] = useLazyQuery(GET_ORGANIZATION_MEMBERS, {
     fetchPolicy: "network-only",
-    onCompleted: (data) => {
-      console.log(data, "data");
-    },
   });
 
-  let months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-  const formatDate = (dateString: string) => {
+  const [
+    getInvited,
+    { loading: invitedLoading, error: invitedError, data: invitedData },
+  ] = useLazyQuery(GET_INVITED_USERS, {
+    fetchPolicy: "network-only",
+  });
+
+  const formatDate = useCallback((dateString: string) => {
+    let months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
     let date = new Date(dateString);
     let formattedDate =
       months[date.getMonth()] +
@@ -55,88 +75,129 @@ const useUserPageGraphql = () => {
       " " +
       date.getFullYear();
     return formattedDate;
-  };
+  }, []);
 
   useEffect(() => {
-    const response = data?.getUsers?.data;
-    if (response) {
-      let userData = response.map((data: any) => {
-        let location = data.location || "";
+    const activeData = membersData?.getOrganizationMembers?.data || [];
+    const invitedUsers = invitedData?.getInvitedUsers?.data || [];
 
-        // Ensure projects are always properly mapped
+    if (membersData || invitedData) {
+      let combinedData = [...activeData, ...invitedUsers];
+
+      let userDataMap = new Map<string, any>();
+
+      combinedData.forEach((data: any) => {
+        const user = data.user || {};
+        const email = (user.email || data.email || "").toLowerCase();
+
+        if (!email) return;
+
         const projects = data.projects || [];
         const mappedProjects = projects.map((project: any) => ({
           _id: project._id,
-          projectName: project.projectName,
+          projectName: project.projectTitle || project.projectName,
         }));
 
         let acceptedInviteValue = data.acceptedInvite;
         if (acceptedInviteValue === undefined || acceptedInviteValue === null) {
-          acceptedInviteValue = data.status !== "INVITED";
+          acceptedInviteValue = data.seatStatus !== "INVITED";
         }
 
-        const userObj = {
-          image: data.profileImg,
-          title: data.title,
-          name: data.name,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          role:
-            data.role === "ORGANIZATION_MANAGER"
-              ? "Organisation manager"
-              : data.role === "PROJECT_MANAGER"
-                ? "Project Manager"
-                : data.role === "USER"
-                  ? "User"
-                  : "Viewer",
-          numOfProjects: mappedProjects.length,
-          projectList: mappedProjects,
-          projects: mappedProjects,
-          acceptedInvite: acceptedInviteValue,
-          status:
-            data.status === "ACTIVE"
-              ? "Active"
-              : data.status === "INVITED"
-                ? "Invited"
-                : data.status === "SUSPENDED"
-                  ? "Suspended"
-                  : "Deleted",
-          location: location,
-          date: formatDate(data.createdAt),
-          checked: false,
-          id: data._id,
-          isBilledSeat: data.isBilledSeat,
-        };
+        const source = data.source || "recruit";
+        const currentAppAccess =
+          data.appAccess || (source === "tracker" ? ["tracker"] : ["recruit"]);
 
-        return userObj;
+        if (userDataMap.has(email)) {
+          const existing = userDataMap.get(email);
+          // Merge logic
+          existing.apps = Array.from(
+            new Set([...existing.apps, ...currentAppAccess]),
+          );
+          existing.source = "merged";
+
+          // Optionally update other fields if 'recruit' (core) data preferred
+          if (source === "recruit") {
+            existing.id = data._id;
+            existing.isBilledSeat = data.isBilledSeat || existing.isBilledSeat;
+            existing.role = formatRole(data.role);
+            existing.rawRole = data.role;
+          }
+        } else {
+          userDataMap.set(email, {
+            image: user.profile_img || data.profileImg,
+            title: data.title || "",
+            name: user.name || data.name || email,
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+            email: email,
+            role: formatRole(data.role),
+            numOfProjects: mappedProjects.length,
+            projectList: mappedProjects,
+            projects: mappedProjects,
+            acceptedInvite: acceptedInviteValue,
+            status: formatStatus(data.seatStatus),
+            location: data.location || "",
+            date: formatDate(data.createdAt),
+            designation: data.companyDetails?.designation || "",
+            checked: false,
+            id: data._id,
+            isBilledSeat: data.isBilledSeat,
+            apps: currentAppAccess,
+            rawRole: data.role,
+            source: source,
+          });
+        }
       });
-      updateUserPage({ users: userData });
+
+      const userData = Array.from(userDataMap.values());
+
+      function formatRole(role: string) {
+        return role === "ORGANIZATION_OWNER"
+          ? "Organisation owner"
+          : role === "ORGANIZATION_MANAGER"
+            ? "Organisation manager"
+            : role === "PROJECT_MANAGER"
+              ? "Project Manager"
+              : role === "USER" || role === "Member"
+                ? "User"
+                : "Viewer";
+      }
+
+      function formatStatus(seatStatus: string) {
+        return seatStatus === "SUSPENDED"
+          ? "Suspended"
+          : seatStatus === "INVITED"
+            ? "Invited"
+            : "Active";
+      }
+
+      // Filter based on active tab locally since getOrganizationMembers returns all
+      const filteredData = userData.filter((user: any) => {
+        if (userPageState.activeTab === 0) return user.status === "Active";
+        if (userPageState.activeTab === 1) return user.status === "Suspended";
+        if (userPageState.activeTab === 2) return user.status === "Invited";
+        return true;
+      });
+
+      updateUserPage({ users: filteredData });
     }
-  }, [data]);
+  }, [
+    membersData,
+    invitedData,
+    formatDate,
+    updateUserPage,
+    userPageState.activeTab,
+  ]);
 
   const runGetUsersQuery = useCallback(
     (input?: any) => {
-      if (input?.status === "INACTIVE") {
-        const { status, ...restInput } = input;
-        getUsers({
-          variables: {
-            input: {
-              ...restInput,
-            },
-          },
-        });
+      if (userPageState.activeTab === 2) {
+        getInvited();
       } else {
-        getUsers({
-          variables: {
-            input: {
-              ...input,
-            },
-          },
-        });
+        getMembers();
       }
     },
-    [getUsers],
+    [getMembers, getInvited, userPageState.activeTab],
   );
 
   const [
@@ -160,7 +221,7 @@ const useUserPageGraphql = () => {
       }));
       updateUserPage({ projects: userData });
     }
-  }, [projectData]);
+  }, [projectData, updateUserPage]);
 
   const runGetProjectsQuery = useCallback(() => {
     getProjects({
@@ -175,165 +236,164 @@ const useUserPageGraphql = () => {
   const [addMember, { loading: addMemberLoading, error: addMemberError }] =
     useMutation(ADD_PROJECT_MEMBER, { context: { clientName: "tracker" } });
 
-  const addProjectMember = async (
-    selectedProjects: (string | number)[],
-    selectedUser: string,
-  ) => {
-    try {
-      const { data } = await addMember({
-        variables: {
-          input: {
-            newProjects: selectedProjects,
-            userId: selectedUser,
-            organization: user?.userData?.attachedOrganization?._id,
-          },
-        },
-        refetchQueries: [GET_PROJECTS_DATA, GET_USERS],
-      });
-      return data;
-    } catch (error) {
-      console.log(error, "add member error");
-    }
-  };
-
-  const [editUserMutation, { loading: editUserLoading, error: editUserError }] =
-    useMutation(EDIT_USER, { context: { clientName: "tracker" } });
-
-  const editUser = async (
-    selectedProjects: (string | number)[],
-    selectedUser: string,
-    status: string,
-  ) => {
-    try {
-      if (!selectedUser || selectedUser.trim() === "") {
-        console.error("Invalid user ID provided:", selectedUser);
-        return { editUser: false, error: "Invalid user ID" };
-      }
-
-      const inputPayload = {
-        projects: selectedProjects || [],
-        status: status,
-        userId: selectedUser.trim(),
-        attachedOrganization: user?.userData?.attachedOrganization?._id,
-      };
-
-      console.log("Sending edit user mutation with payload:", inputPayload);
-
-      const { data } = await editUserMutation({
-        variables: {
-          input: inputPayload,
-        },
-        refetchQueries: [
-          {
-            query: GET_USERS,
-            variables: {
-              input: {
-                status: status === "ACTIVE" ? "ACTIVE" : null,
-              },
+  const addProjectMember = useCallback(
+    async (selectedProjects: (string | number)[], selectedUser: string) => {
+      try {
+        const { data } = await addMember({
+          variables: {
+            input: {
+              newProjects: selectedProjects,
+              userId: selectedUser,
+              organization: user?.userData?.attachedOrganization?._id,
             },
           },
-        ],
-        awaitRefetchQueries: true,
-      });
+          refetchQueries: [GET_PROJECTS_DATA, GET_ORGANIZATION_MEMBERS],
+        });
+        return data;
+      } catch (error) {
+        console.log(error, "add member error");
+      }
+    },
+    [addMember, user],
+  );
 
-      console.log("Edit user mutation response:", data);
-      return data;
-    } catch (error) {
-      console.error("Error in editUser mutation:", error);
-      return { editUser: false, error };
-    }
-  };
+  const [editUserMutation, { loading: editUserLoading, error: editUserError }] =
+    useMutation(EDIT_USER);
+
+  const [suspendSeatMutation, { loading: suspendSeatLoading }] =
+    useMutation(SUSPEND_SEAT);
+
+  const [reactivateSeatMutation, { loading: reactivateSeatLoading }] =
+    useMutation(REACTIVATE_SEAT);
+
+  const editUser = useCallback(
+    async (
+      selectedProjects: (string | number)[],
+      selectedUser: string,
+      status: string,
+    ) => {
+      try {
+        if (!selectedUser || selectedUser.trim() === "") {
+          console.error("Invalid user ID provided:", selectedUser);
+          return { editUser: false, error: "Invalid user ID" };
+        }
+
+        let result;
+        if (status === "SUSPENDED") {
+          result = await suspendSeatMutation({
+            variables: { clientId: selectedUser },
+          });
+        } else if (status === "ACTIVE") {
+          result = await reactivateSeatMutation({
+            variables: { clientId: selectedUser },
+          });
+        }
+
+        console.log("Edit user (seat status) response:", result);
+        unSelectUsers();
+        return result?.data;
+      } catch (error) {
+        console.error("Error in editUser (seat status):", error);
+        return { editUser: false, error };
+      }
+    },
+    [suspendSeatMutation, reactivateSeatMutation, unSelectUsers],
+  );
 
   const [
     suspendMultipleUsersMutation,
     { loading: suspendUsersLoading, error: suspendUsersError },
-  ] = useMutation(UPDATE_MULTIPLE_USERS, {
-    context: { clientName: "tracker" },
-  });
+  ] = useMutation(UPDATE_MULTIPLE_USERS);
 
-  const suspendMultipleUsers = async (status: string) => {
-    try {
-      let selectedUsers = userPageState.selectedUsers;
+  const suspendMultipleUsers = useCallback(
+    async (status: string) => {
+      try {
+        let selectedUsers = userPageState.selectedUsers;
 
-      if (
-        !selectedUsers ||
-        !Array.isArray(selectedUsers) ||
-        selectedUsers.length === 0
-      ) {
-        console.error("No users selected for suspend/restore operation");
-        return { updateUserStatus: false, error: "No users selected" };
-      }
+        if (
+          !selectedUsers ||
+          !Array.isArray(selectedUsers) ||
+          selectedUsers.length === 0
+        ) {
+          console.error("No users selected for suspend/restore operation");
+          return { updateUserStatus: false, error: "No users selected" };
+        }
 
-      const validatedUserIds = selectedUsers
-        .filter((id) => id && typeof id === "string" && id.trim() !== "")
-        .map((id) => id.trim());
+        const validatedUserIds = selectedUsers
+          .filter((id) => id && typeof id === "string" && id.trim() !== "")
+          .map((id) => id.trim());
 
-      if (validatedUserIds.length === 0) {
-        console.error("No valid user IDs found in selection");
-        return { updateUserStatus: false, error: "No valid user IDs" };
-      }
+        if (validatedUserIds.length === 0) {
+          console.error("No valid user IDs found in selection");
+          return { updateUserStatus: false, error: "No valid user IDs" };
+        }
 
-      const organizationId = user?.userData?.attachedOrganization?._id;
+        const organizationId = user?.userData?.attachedOrganization?._id;
 
-      if (!organizationId) {
-        console.error("No organization ID found in user data");
-        return {
-          updateUserStatus: false,
-          error: "You are not affiliated with this organization",
-        };
-      }
+        if (!organizationId) {
+          console.error("No organization ID found in user data");
+          return {
+            updateUserStatus: false,
+            error: "You are not affiliated with this organization",
+          };
+        }
 
-      console.log("Suspending/restoring users with status:", status);
-      console.log("Selected users:", validatedUserIds);
-      console.log("Organization ID:", organizationId);
+        console.log("Suspending/restoring users with status:", status);
+        console.log("Selected users:", validatedUserIds);
+        console.log("Organization ID:", organizationId);
 
-      const { data } = await suspendMultipleUsersMutation({
-        variables: {
-          args: {
-            status: status,
-            userIds: validatedUserIds,
-            organization: organizationId,
-          },
-        },
-        refetchQueries: [
-          {
-            query: GET_USERS,
-            variables: {
-              input: {
-                status: status === "ACTIVE" ? "ACTIVE" : null,
-              },
+        const { data } = await suspendMultipleUsersMutation({
+          variables: {
+            args: {
+              status: status,
+              userIds: validatedUserIds,
+              organization: organizationId,
             },
           },
-        ],
-        awaitRefetchQueries: true,
-      });
+          refetchQueries: [
+            {
+              query: GET_ORGANIZATION_MEMBERS,
+              variables: {
+                input: {
+                  status: status === "ACTIVE" ? "ACTIVE" : null,
+                },
+              },
+            },
+          ],
+          awaitRefetchQueries: true,
+        });
 
-      console.log("Suspend multiple users response:", data);
-      unSelectUsers();
-      return data;
-    } catch (error) {
-      console.error("Error in suspendMultipleUsers:", error);
-      return { updateUserStatus: false, error };
-    }
-  };
+        console.log("Suspend multiple users response:", data);
+        unSelectUsers();
+        return data;
+      } catch (error) {
+        console.error("Error in suspendMultipleUsers:", error);
+        return { updateUserStatus: false, error };
+      }
+    },
+    [suspendMultipleUsersMutation, user, userPageState, unSelectUsers],
+  );
 
   const [
     deleteUserMutation,
     { loading: deleteserLoading, error: deleteUserError },
-  ] = useMutation(DELETE_USER, { context: { clientName: "tracker" } });
-  const deleteUser = async (selectedUser: string) => {
-    try {
-      const { data } = await deleteUserMutation({
-        variables: {
-          userId: selectedUser,
-        },
-      });
-      unSelectUsers();
-      return data;
-    } catch (error) {
-      console.log(error, "add member error");
-    }
-  };
+  ] = useMutation(DELETE_MEMBER_FROM_ORGANIZATION);
+  const deleteUser = useCallback(
+    async (selectedUser: string) => {
+      try {
+        const { data } = await deleteUserMutation({
+          variables: {
+            memberId: selectedUser,
+          },
+        });
+        unSelectUsers();
+        return data;
+      } catch (error) {
+        console.log(error, "add member error");
+      }
+    },
+    [deleteUserMutation, unSelectUsers],
+  );
 
   const [
     deleteMultipleUsersMutation,
@@ -342,7 +402,7 @@ const useUserPageGraphql = () => {
     context: { clientName: "tracker" },
   });
 
-  const deleteMultipleUsers = async () => {
+  const deleteMultipleUsers = useCallback(async () => {
     let selectedUsers = userPageState.selectedUsers;
 
     if (
@@ -384,7 +444,7 @@ const useUserPageGraphql = () => {
             organization: organizationId,
           },
         },
-        refetchQueries: [GET_USERS],
+        refetchQueries: [GET_ORGANIZATION_MEMBERS],
         awaitRefetchQueries: true,
       });
 
@@ -395,68 +455,76 @@ const useUserPageGraphql = () => {
       console.error("Error in deleteMultipleUsers:", error);
       return { deleteManyUsers: false, error };
     }
-  };
+  }, [deleteMultipleUsersMutation, user, userPageState, unSelectUsers]);
 
   const [
     reInviteUserMutation,
     { loading: reInviteUserLoading, error: reInviteUserError },
-  ] = useMutation(INVITE_USER, { context: { clientName: "tracker" } });
+  ] = useMutation(INVITE_USER);
 
-  const reInviteUser = async (selectedUser: string, userData?: any) => {
-    let userInfo = userData || getUserInfo(selectedUser);
+  const reInviteUser = useCallback(
+    async (selectedUser: string, userData?: any) => {
+      let userInfo = userData || getUserInfo(selectedUser);
 
-    if (!userInfo) {
-      return { inviteUsers: false, error: "User not found" };
-    }
-
-    const title = userInfo?.title || "Mr";
-    const email = userInfo?.email;
-    const firstName = userInfo?.firstName || "";
-    const lastName = userInfo?.lastName || "";
-    const profileImg = userInfo?.image || "";
-
-    if (!email) {
-      return { inviteUsers: false, error: "Email is required" };
-    }
-
-    try {
-      const { data, errors } = await reInviteUserMutation({
-        variables: {
-          input: {
-            title: title,
-            role:
-              userInfo?.role === "Organisation manager"
-                ? "ORGANIZATION_MANAGER"
-                : userInfo?.role === "Project Manager"
-                  ? "PROJECT_MANAGER"
-                  : userInfo?.role === "User"
-                    ? "USER"
-                    : "VIEW",
-            lastName: lastName,
-            firstName: firstName,
-            email: email,
-            profileImg: profileImg,
-            location: userInfo?.location,
-            organization:
-              user?.userData?.attachedOrganization?._id ||
-              "65169b7ef0410efa3245d795",
-          },
-        },
-      });
-
-      if (errors && errors.length > 0) {
-        return { inviteUsers: false, error: errors[0].message };
+      if (!userInfo) {
+        return { inviteUsers: false, error: "User not found" };
       }
 
-      return data;
-    } catch (error) {
-      console.log(error, "reinvite user error");
-      return { inviteUsers: false, error };
-    }
-  };
+      const title = userInfo?.title || "Mr";
+      const email = userInfo?.email;
+      const firstName = userInfo?.firstName || "";
+      const lastName = userInfo?.lastName || "";
+      const profileImg = userInfo?.image || "";
+
+      if (!email) {
+        return { inviteUsers: false, error: "Email is required" };
+      }
+
+      try {
+        const { data, errors } = await reInviteUserMutation({
+          variables: {
+            input: {
+              title: title,
+              role:
+                userInfo?.role === "Organisation owner"
+                  ? "ORGANIZATION_OWNER"
+                  : userInfo?.role === "Organisation manager"
+                    ? "ORGANIZATION_MANAGER"
+                    : userInfo?.role === "Project Manager"
+                      ? "PROJECT_MANAGER"
+                      : userInfo?.role === "User"
+                        ? "USER"
+                        : "VIEW",
+              lastName: lastName,
+              firstName: firstName,
+              email: email,
+              profileImg: profileImg,
+              location: userInfo?.location,
+              organization:
+                user?.userData?.attachedOrganization?._id ||
+                "65169b7ef0410efa3245d795",
+            },
+          },
+        });
+
+        if (errors && errors.length > 0) {
+          return { inviteUsers: false, error: errors[0].message };
+        }
+
+        return data;
+      } catch (error) {
+        console.log(error, "reinvite user error");
+        return { inviteUsers: false, error };
+      }
+    },
+    [reInviteUserMutation, getUserInfo, user],
+  );
   return useMemo(
     () => ({
-      loading: loading,
+      loading: membersLoading || invitedLoading,
+      error: membersError || invitedError,
+      users: userPageState.users,
+      projects: userPageState.projects,
       runGetUsersQuery,
       runGetProjectsQuery,
       addProjectMember,
@@ -465,11 +533,15 @@ const useUserPageGraphql = () => {
       deleteUser,
       deleteMultipleUsers,
       reInviteUser,
+      getUserInfo,
     }),
     [
-      data,
-      projectData,
-      loading,
+      membersLoading,
+      invitedLoading,
+      membersError,
+      invitedError,
+      userPageState.users,
+      userPageState.projects,
       runGetUsersQuery,
       runGetProjectsQuery,
       addProjectMember,
@@ -478,6 +550,7 @@ const useUserPageGraphql = () => {
       deleteUser,
       deleteMultipleUsers,
       reInviteUser,
+      getUserInfo,
     ],
   );
 };

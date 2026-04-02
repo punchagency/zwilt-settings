@@ -32,6 +32,8 @@ import {
   Checkbox,
   Typography,
   Stack,
+  FormControlLabel,
+  Skeleton,
 } from "@mui/material";
 import AvatarP from "../avatar";
 import useUserPage from "@/hooks/user/use-user-page";
@@ -70,8 +72,9 @@ const Heading = styled(Stack)(({ theme }) => ({
   width: "100%",
   borderBottom: "0.0521vw",
 }));
-import { GET_USERS_WITH_ACTIVITY } from "@/graphql/queries/activity";
-import { useLazyQuery } from "@apollo/react-hooks";
+import { notifyErrorFxn, notifySuccessFxn } from "@/utils/toast-fxn";
+import { useLazyQuery, useMutation } from "@apollo/react-hooks";
+import { UPDATE_SEAT_APP_ACCESS, UPDATE_USER } from "@/graphql/mutations/user";
 import { IUser } from "./types";
 import ConfirmDialogBox, {
   MainMessage,
@@ -104,6 +107,7 @@ const Users: React.FC = () => {
     deleteUser,
     deleteMultipleUsers,
     reInviteUser,
+    loading,
   } = useUserPageGraphql();
   const { updateUserPage, userPageState, getAssignedProjects, getUserInfo } =
     useUserPage();
@@ -113,12 +117,22 @@ const Users: React.FC = () => {
   const [activeCount, setActiveCount] = useState(0);
   const [archivedCount, setArchivedCount] = useState(0);
   const [invitedCount, setInvitedCount] = useState(0);
-  const [activeTodayCount, setActiveTodayCount] = useState(0);
-  const [probationUsersCount, setProbationUsersCount] = useState(0);
-  const [lastActiveData, setLastActiveData] = useState<{
-    [userId: string]: string;
-  }>({});
+  const [trackerCount, setTrackerCount] = useState(0);
+  const [salesCount, setSalesCount] = useState(0);
+  const [recruitCount, setRecruitCount] = useState(0);
+  const [marketCount, setMarketCount] = useState(0);
+  const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [user] = useRecoilState(userAtom);
+  const [billedCount, setBilledCount] = useState(0);
+  const [openAppAccess, setOpenAppAccess] = useState(false);
+  const [selectedSeatId, setSelectedSeatId] = useState("");
+  const [currentAppAccess, setCurrentAppAccess] = useState<string[]>([]);
+
+  const handleAppAccessEdit = (clientId: string, apps: string[]) => {
+    setSelectedSeatId(clientId);
+    setCurrentAppAccess(apps);
+    setOpenAppAccess(true);
+  };
   const [locationFilterAnchorEl, setLocationFilterAnchorEl] =
     useState<null | HTMLElement>(null);
   const [selectedLocation, setSelectedLocation] = useState("");
@@ -131,16 +145,7 @@ const Users: React.FC = () => {
         return JSON.parse(saved);
       }
     }
-    return [
-      "user",
-      "email",
-      "role",
-      "projectList",
-      "status",
-      "lastActive",
-      "date",
-      "edit",
-    ];
+    return ["user", "email", "role", "apps", "status", "date", "edit"];
   });
   const theme = useTheme();
   const router = useRouter();
@@ -269,130 +274,15 @@ const Users: React.FC = () => {
     }
   }, [activeTab]);
 
-  const [
-    getUsersWithActivity,
-    { loading: activityLoading, data: activityData },
-  ] = useLazyQuery(GET_USERS_WITH_ACTIVITY, {
-    context: { clientName: "tracker" },
-    fetchPolicy: "network-only",
-    onCompleted: (data) => {
-      if (data?.getUsersRecentActivities?.data) {
-        const lastActiveMap: { [userId: string]: string } = {};
-
-        data.getUsersRecentActivities.data.forEach((user: any) => {
-          const userId = user._id;
-
-          if (userId && user.recentTracking && user.recentTracking.length > 0) {
-            let mostRecentDate: Date | null = null;
-
-            for (const tracking of user.recentTracking) {
-              let parsedDate: Date | null = null;
-
-              try {
-                if (tracking.createdAt) {
-                  const createdAtDate = new Date(tracking.createdAt);
-                  if (
-                    !isNaN(createdAtDate.getTime()) &&
-                    createdAtDate.getFullYear() <= new Date().getFullYear()
-                  ) {
-                    parsedDate = createdAtDate;
-                  }
-                }
-
-                if (!parsedDate && tracking.trackingDate) {
-                  const rawDate = tracking.trackingDate;
-
-                  if (typeof rawDate === "string") {
-                    let cleanDate = rawDate.replace(/^\/|\/$/g, "").trim();
-
-                    const customDateRegex =
-                      /([A-Za-z]{3}),?\s*(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/;
-                    const match = cleanDate.match(customDateRegex);
-
-                    if (match) {
-                      const [, , day, month, year] = match;
-                      const monthNames = [
-                        "Jan",
-                        "Feb",
-                        "Mar",
-                        "Apr",
-                        "May",
-                        "Jun",
-                        "Jul",
-                        "Aug",
-                        "Sep",
-                        "Oct",
-                        "Nov",
-                        "Dec",
-                      ];
-                      const monthIndex = monthNames.indexOf(month);
-
-                      if (monthIndex !== -1) {
-                        const parsedYear = parseInt(year);
-                        const parsedDay = parseInt(day);
-
-                        const currentYear = new Date().getFullYear();
-                        if (parsedYear <= currentYear && parsedYear >= 2020) {
-                          parsedDate = new Date(
-                            parsedYear,
-                            monthIndex,
-                            parsedDay,
-                          );
-                        }
-                      }
-                    } else {
-                      const testDate = new Date(cleanDate);
-                      if (
-                        !isNaN(testDate.getTime()) &&
-                        testDate.getFullYear() <= new Date().getFullYear()
-                      ) {
-                        parsedDate = testDate;
-                      }
-                    }
-                  } else if (rawDate instanceof Date) {
-                    if (
-                      !isNaN(rawDate.getTime()) &&
-                      rawDate.getFullYear() <= new Date().getFullYear()
-                    ) {
-                      parsedDate = rawDate;
-                    }
-                  }
-                }
-
-                if (
-                  parsedDate &&
-                  (!mostRecentDate || parsedDate > mostRecentDate)
-                ) {
-                  mostRecentDate = parsedDate;
-                }
-              } catch (error) {}
-            }
-
-            if (mostRecentDate) {
-              lastActiveMap[userId] = mostRecentDate.toISOString();
-            }
-          }
+  const [updateUser, { data: editUserData, loading: loadingUpdateUser }] =
+    useMutation(UPDATE_USER, {
+      onCompleted: () => {
+        runGetUsersQuery({
+          status: getActiveTabText(),
+          location: selectedLocation || undefined,
         });
-
-        setLastActiveData(lastActiveMap);
-
-        // Calculate active today count directly from the query result
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        let activeTodayCount = 0;
-        Object.values(lastActiveMap).forEach((lastActiveDate: string) => {
-          const date = new Date(lastActiveDate);
-          date.setHours(0, 0, 0, 0);
-          if (date.getTime() === today.getTime()) {
-            activeTodayCount++;
-          }
-        });
-
-        setActiveTodayCount(activeTodayCount);
-      }
-    },
-  });
+      },
+    });
 
   useEffect(() => {
     if (userPageState?.users) {
@@ -443,42 +333,65 @@ const Users: React.FC = () => {
         return data?.status?.toLowerCase() === "invited" && handleSearch(data);
       }).length;
 
+      const isBilled = (user: any) => {
+        const apps = user?.apps || [];
+
+        const role = user?.rawRole || user?.role;
+        const billingRoles = ["ORGANIZATION_OWNER", "ORGANIZATION_MANAGER"];
+
+        const isTrackerBilled =
+          apps.includes("tracker") && billingRoles.includes(role);
+        const isSalesBilled = apps.includes("sales");
+        const isRecruitBilled = apps.includes("recruit");
+        const isMarketBilled = apps.includes("market");
+
+        return (
+          isTrackerBilled || isSalesBilled || isRecruitBilled || isMarketBilled
+        );
+      };
+
+      const billedC = locationFiltered?.filter((data: any) =>
+        isBilled(data),
+      ).length;
+
       setActiveCount(activeC);
       setArchivedCount(archived);
       setInvitedCount(invitedC);
+      setBilledCount(billedC);
 
-      const ninetyDaysAgo = new Date();
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-      const probationC =
-        allUsers?.filter((user: any) => {
-          if (user.status?.toLowerCase() !== "active") return false;
-          const dateField = user.createdAt || user.date;
-          if (!dateField) return false;
-          const createdAt = new Date(dateField);
-          if (isNaN(createdAt.getTime())) return false;
-          return createdAt >= ninetyDaysAgo;
-        }).length || 0;
-      setProbationUsersCount(probationC);
+      const recruitC =
+        locationFiltered?.filter(
+          (data: any) =>
+            data?.source === "recruit" || data?.source === "merged",
+        ).length || 0;
+      const trackerC =
+        locationFiltered?.filter(
+          (data: any) =>
+            data?.source === "tracker" || data?.source === "merged",
+        ).length || 0;
+      const totalUsersC = locationFiltered?.length || 0;
+
+      setTotalUsersCount(totalUsersC);
+      setRecruitCount(recruitC);
+      setTrackerCount(trackerC);
 
       setTableData(
         filteredUsers?.map((data: any) => {
-          const lastActive = activityLoading
-            ? "Loading..."
-            : lastActiveData[data.id] || "Not Tracked";
+          const userIsBilled = isBilled(data);
           return {
             ...data,
             user: {
-              name: `${data.firstName} ${data.lastName}`,
-              image: data.image,
+              name: data.name || `${data.firstName} ${data.lastName}`,
               id: data.id,
-              isBilledSeat: data.isBilledSeat,
+              isBilledSeat: userIsBilled,
             },
+            isBilledSeat: userIsBilled,
             numOfProjects:
               data.projectList?.length || data.projects?.length || 0,
             projectList: data.projectList || data.projects || [],
             id: data.id,
             status: formatStatus(data.status, data.acceptedInvite),
-            lastActive: lastActive,
+            apps: data.apps || [],
           };
         }),
       );
@@ -488,8 +401,6 @@ const Users: React.FC = () => {
     activeTab,
     selectedLocation,
     searchInput,
-    lastActiveData,
-    activityLoading,
     handleSearch,
   ]);
 
@@ -505,21 +416,10 @@ const Users: React.FC = () => {
         status: getActiveTabText(),
         location: selectedLocation || undefined,
       });
-
-      getUsersWithActivity({
-        variables: {
-          input: {
-            current: "1",
-            limit: "1000",
-            activityType: "",
-          },
-        },
-      });
     }
   }, [
     userPageState.projects,
     getActiveTabText,
-    getUsersWithActivity,
     runGetUsersQuery,
     selectedLocation,
   ]);
@@ -538,19 +438,6 @@ const Users: React.FC = () => {
     runGetUsersQuery,
     userPageState.projects,
   ]);
-  useEffect(() => {
-    if (userPageState?.users && userPageState.users.length > 0) {
-      getUsersWithActivity({
-        variables: {
-          input: {
-            current: "1",
-            limit: "1000",
-            activityType: "",
-          },
-        },
-      });
-    }
-  }, [userPageState?.users, getUsersWithActivity]);
 
   const formatStatus = (status: string, acceptedInvite: boolean): string => {
     if (!status) return "";
@@ -585,7 +472,6 @@ const Users: React.FC = () => {
               router.push(`/user/add-user?sId=${value?.id}&view=${true}`)
             }
           >
-            <AvatarP img={value.image} initial={value.name} />
             <div
               style={{
                 display: "flex",
@@ -595,11 +481,35 @@ const Users: React.FC = () => {
               }}
             >
               <span>{value.name}</span>
-              {value.isBilledSeat && (
-                <span className="text-[0.625vw] bg-[#E8F5E9] text-[#2E7D32] px-[0.4vw] py-[0.1vw] rounded-[0.2vw] mt-[0.2vw] font-medium border border-[#A5D6A7]">
-                  Billed Seat
-                </span>
-              )}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "4px",
+                  flexWrap: "wrap",
+                  marginTop: "4px",
+                }}
+              >
+                {value.isBilledSeat && (
+                  <span className="text-[10px] bg-[#E8F5E9] text-[#2E7D32] px-[6px] py-[2px] rounded-[4px] font-medium border border-[#A5D6A7]">
+                    Billed Seat
+                  </span>
+                )}
+                {value.source === "tracker" && (
+                  <span className="text-[10px] bg-[#FFF4ED] text-[#C4320A] px-[6px] py-[2px] rounded-[4px] font-medium border border-[#FED7AA]">
+                    Tracker
+                  </span>
+                )}
+                {value.source === "recruit" && (
+                  <span className="text-[10px] bg-[#F5F3FF] text-[#7C3AED] px-[6px] py-[2px] rounded-[4px] font-medium border border-[#DDD6FE]">
+                    Recruit
+                  </span>
+                )}
+                {value.source === "merged" && (
+                  <span className="text-[10px] bg-[#EFF6FF] text-[#2563EB] px-[6px] py-[2px] rounded-[4px] font-medium border border-[#DBEAFE]">
+                    Recruit + Tracker
+                  </span>
+                )}
+              </div>
             </div>
           </UserNameWrapper>
         );
@@ -636,65 +546,47 @@ const Users: React.FC = () => {
           .join(" ");
       },
     },
-
     {
-      name: "Projects",
-      width: 10,
-      id: "projectList",
+      name: "Apps",
+      id: "apps",
       render: (value: any, row: any) => {
-        const projectList = value?.map((p: any) => p.projectName);
+        const apps = value || [];
         return (
           <div
-            onClick={() => {
-              handleChange("assignProjects", row.id);
-            }}
-            style={{ cursor: "pointer" }}
+            style={{ display: "flex", gap: "4px", cursor: "pointer" }}
+            onClick={() => handleAppAccessEdit(row.id, apps)}
           >
-            <HtmlTooltip
-              title={
-                value?.length > 0 && <ProjectsTooltip projects={projectList} />
-              }
-              arrow
-            >
-              <TableCellTextBlue>{value?.length}</TableCellTextBlue>
-            </HtmlTooltip>
+            {apps.length > 0 ? (
+              apps.map((app: string) => (
+                <span
+                  key={app}
+                  style={{
+                    fontSize: "12px",
+                    background: "#F2F4F7",
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    color: "#344054",
+                    border: "1px solid #D0D5DD",
+                  }}
+                >
+                  {app.charAt(0).toUpperCase() + app.slice(1)}
+                </span>
+              ))
+            ) : (
+              <span style={{ color: "#98A2B3", fontSize: "12px" }}>
+                No Apps
+              </span>
+            )}
           </div>
         );
       },
     },
+
     {
       name: "Status",
       id: "status",
       width: 10,
     },
-    // {
-    //   name: "Last Active",
-    //   id: "lastActive",
-    //   width: 12,
-    //   render: (value: any) => {
-    //     if (activityLoading) {
-    //       return <span style={{ color: "#000" }}>Loading...</span>;
-    //     }
-
-    //     if (!value || value === "Not Tracked") {
-    //       return <span style={{ color: "#000" }}>Not Tracked</span>;
-    //     }
-
-    //     const date = new Date(value);
-    //     const now = new Date();
-    //     const diffTime = Math.abs(now.getTime() - date.getTime());
-    //     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    //     const options: Intl.DateTimeFormatOptions = {
-    //       year: "numeric",
-    //       month: "short",
-    //       day: "2-digit",
-    //     };
-    //     const formattedDate = date.toLocaleString("en-US", options);
-
-    //     return <span style={{ color: "#000" }}>{formattedDate}</span>;
-    //   },
-    // },
     {
       name: "Date Added",
       id: "date",
@@ -720,7 +612,6 @@ const Users: React.FC = () => {
         const hideActive =
           activeTab !== 1 || row.status?.toLowerCase() === "deleted";
         const hideEdit = activeTab === 1;
-        const hideAddProject = activeTab === 1;
         return (
           <div
             style={{
@@ -735,16 +626,6 @@ const Users: React.FC = () => {
                 }}
               >
                 <EditBtnIcon />
-              </ActionBtn>
-            </Tooltip>
-            <Tooltip title="Assign Project">
-              <ActionBtn
-                hide={hideAddProject}
-                onClick={() => {
-                  handleChange("assignProjects", row.id);
-                }}
-              >
-                <PlusIcon />
               </ActionBtn>
             </Tooltip>
             <Tooltip title="Suspend">
@@ -1874,12 +1755,47 @@ const Users: React.FC = () => {
               </svg>
             </AnalyticsIconWrapper>
           </AnalyticsCardHeader>
-          <AnalyticsCardValue>{activeCount}</AnalyticsCardValue>
+          <AnalyticsCardValue>
+            {loading ? <Skeleton width="40%" /> : totalUsersCount}
+          </AnalyticsCardValue>
         </AnalyticsCard>
 
         <AnalyticsCard>
           <AnalyticsCardHeader>
-            <AnalyticsCardTitle>Active Today</AnalyticsCardTitle>
+            <AnalyticsCardTitle>Recruit Users</AnalyticsCardTitle>
+            <AnalyticsIconWrapper style={{ backgroundColor: "#F3E8FF" }}>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"
+                  stroke="#9333EA"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z"
+                  stroke="#9333EA"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </AnalyticsIconWrapper>
+          </AnalyticsCardHeader>
+          <AnalyticsCardValue>
+            {loading ? <Skeleton width="40%" /> : recruitCount}
+          </AnalyticsCardValue>
+        </AnalyticsCard>
+
+        <AnalyticsCard>
+          <AnalyticsCardHeader>
+            <AnalyticsCardTitle>Tracker Users</AnalyticsCardTitle>
             <AnalyticsIconWrapper style={{ backgroundColor: "#ECFDF5" }}>
               <svg
                 width="24"
@@ -1889,21 +1805,14 @@ const Users: React.FC = () => {
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path
-                  d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"
+                  d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
                   stroke="#10B981"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
                 <path
-                  d="M8.5 11C10.7091 11 12.5 9.20914 12.5 7C12.5 4.79086 10.7091 3 8.5 3C6.29086 3 4.5 4.79086 4.5 7C4.5 9.20914 6.29086 11 8.5 11Z"
-                  stroke="#10B981"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M17 8L19 10L23 6"
+                  d="M12 6V12L16 14"
                   stroke="#10B981"
                   strokeWidth="2"
                   strokeLinecap="round"
@@ -1912,54 +1821,9 @@ const Users: React.FC = () => {
               </svg>
             </AnalyticsIconWrapper>
           </AnalyticsCardHeader>
-          <AnalyticsCardValue>{activeTodayCount}</AnalyticsCardValue>
-        </AnalyticsCard>
-
-        <AnalyticsCard>
-          <AnalyticsCardHeader>
-            <AnalyticsCardTitle>Probation Users</AnalyticsCardTitle>
-            <AnalyticsIconWrapper style={{ backgroundColor: "#FEF3C7" }}>
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"
-                  stroke="#F59E0B"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M8.5 11C10.7091 11 12.5 9.20914 12.5 7C12.5 4.79086 10.7091 3 8.5 3C6.29086 3 4.5 4.79086 4.5 7C4.5 9.20914 6.29086 11 8.5 11Z"
-                  stroke="#F59E0B"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle
-                  cx="19"
-                  cy="8"
-                  r="4"
-                  stroke="#F59E0B"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M19 6V8L20 9"
-                  stroke="#F59E0B"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </AnalyticsIconWrapper>
-          </AnalyticsCardHeader>
-          <AnalyticsCardValue>{probationUsersCount}</AnalyticsCardValue>
+          <AnalyticsCardValue>
+            {loading ? <Skeleton width="40%" /> : trackerCount}
+          </AnalyticsCardValue>
         </AnalyticsCard>
       </AnalyticsCardsContainer>
 
@@ -1994,6 +1858,13 @@ const Users: React.FC = () => {
               onClose={() => setAddMember(false)}
             />
           )}
+          <AppAccessModal
+            open={openAppAccess}
+            onClose={() => setOpenAppAccess(false)}
+            clientId={selectedSeatId}
+            currentAccess={currentAppAccess}
+            onUpdate={() => runGetUsersQuery({ status: getActiveTabText() })}
+          />
           <DialogBox
             title="Assign Project"
             actionText="Update"
@@ -2212,10 +2083,6 @@ const Users: React.FC = () => {
                           )
                         }
                       >
-                        <AvatarP
-                          img={user.user?.image}
-                          initial={user.user?.name}
-                        />
                         <UserCardNameSection>
                           <UserCardName>{user.user?.name}</UserCardName>
                           <UserCardEmail>{user.email}</UserCardEmail>
@@ -2244,24 +2111,6 @@ const Users: React.FC = () => {
                             month: "short",
                             day: "2-digit",
                           })}
-                        </UserCardDetailValue>
-                      </UserCardDetailItem>
-                      <UserCardDetailItem>
-                        <UserCardDetailLabel>LAST ACTIVE</UserCardDetailLabel>
-                        <UserCardDetailValue>
-                          {activityLoading
-                            ? "Loading..."
-                            : !user.lastActive ||
-                                user.lastActive === "Not Tracked"
-                              ? "Not Tracked"
-                              : new Date(user.lastActive).toLocaleDateString(
-                                  "en-US",
-                                  {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "2-digit",
-                                  },
-                                )}
                         </UserCardDetailValue>
                       </UserCardDetailItem>
                       <UserCardDetailItem>
@@ -2340,15 +2189,32 @@ const Users: React.FC = () => {
             </UserCardsContainer>
           ) : (
             <UserTable>
-              <CustomTable
-                key={activeTab}
-                onSelect={(e: any) => {
-                  setUsersSelected(e);
-                }}
-                columns={columns}
-                data={tableData}
-                selectedRows={usersSelected}
-              />
+              {loading ? (
+                <div style={{ padding: "1rem" }}>
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton
+                      key={i}
+                      variant="rectangular"
+                      height={60}
+                      sx={{
+                        mb: "1px",
+                        backgroundColor: "#f9fafb",
+                        borderRadius: i === 0 ? "8px 8px 0 0" : "0",
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <CustomTable
+                  key={activeTab}
+                  onSelect={(e: any) => {
+                    setUsersSelected(e);
+                  }}
+                  columns={columns}
+                  data={tableData}
+                  selectedRows={usersSelected}
+                />
+              )}
             </UserTable>
           )}
         </UsersWrapper>
@@ -2676,31 +2542,39 @@ const UserCardActionLeft = styled(Box)(({ theme }) => ({
 // Analytics Cards Styles
 const AnalyticsCardsContainer = styled(Box)(({ theme }) => ({
   display: "grid",
-  gridTemplateColumns: "repeat(3, 1fr)",
-  gap: "1.5rem",
+  gridTemplateColumns: "repeat(5, 1fr)",
+  gap: "1rem",
   padding: "2.5rem 0rem 0rem ",
   [theme.breakpoints.down("lg")]: {
     gridTemplateColumns: "repeat(3, 1fr)",
     gap: "1rem",
   },
   [theme.breakpoints.down("md")]: {
-    gridTemplateColumns: "1fr",
+    gridTemplateColumns: "repeat(2, 1fr)",
     gap: "1rem",
-    padding: "1rem 0",
+    padding: "1.5rem 0",
+  },
+  [theme.breakpoints.down("sm")]: {
+    gridTemplateColumns: "1fr",
   },
 }));
 
 const AnalyticsCard = styled(Box)(({ theme }) => ({
   backgroundColor: "#FFFFFF",
-  borderRadius: "8px",
-  border: "1px solid #EAECF0",
-  padding: "1.5rem",
+  borderRadius: "12px",
+  border: "1px solid #E2E8F0",
+  padding: "1.25rem",
   display: "flex",
   flexDirection: "column",
-  gap: "1rem",
-  boxShadow: "0 1px 2px 0 rgba(16, 24, 40, 0.05)",
+  gap: "0.75rem",
+  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.08)",
+  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+  "&:hover": {
+    transform: "translateY(-4px)",
+    boxShadow: "0 12px 20px rgba(0, 0, 0, 0.08), 0 4px 6px rgba(0, 0, 0, 0.04)",
+  },
   [theme.breakpoints.down("md")]: {
-    padding: "1.25rem",
+    padding: "1rem",
   },
 }));
 
@@ -2764,3 +2638,83 @@ const AnalyticsIndicator = styled(Box)<AnalyticsIndicatorProps>(
     transition: "background-color 0.3s ease",
   }),
 );
+
+const AppAccessModal = ({
+  open,
+  onClose,
+  clientId,
+  currentAccess,
+  onUpdate,
+}: {
+  open: boolean;
+  onClose: () => void;
+  clientId: string;
+  currentAccess: string[];
+  onUpdate: () => void;
+}) => {
+  const [selectedApps, setSelectedApps] = useState<string[]>(currentAccess);
+  const [updateAppAccess, { loading }] = useMutation(UPDATE_SEAT_APP_ACCESS);
+
+  useEffect(() => {
+    setSelectedApps(currentAccess);
+  }, [currentAccess, open]);
+
+  const handleToggle = (app: string) => {
+    setSelectedApps((prev) =>
+      prev.includes(app) ? prev.filter((a) => a !== app) : [...prev, app],
+    );
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateAppAccess({
+        variables: {
+          clientId,
+          appAccess: selectedApps,
+        },
+      });
+      notifySuccessFxn("App access updated successfully");
+      onUpdate();
+      onClose();
+    } catch (error: any) {
+      console.error(error);
+      notifyErrorFxn(error?.message || "Failed to update app access");
+    }
+  };
+
+  return (
+    <DialogBox
+      open={open}
+      handleClose={onClose}
+      title="Manage App Access"
+      actionText="Save Changes"
+      onUpdate={handleSave}
+      selectedUser={clientId}
+    >
+      <div style={{ padding: "0.5rem" }}>
+        <div
+          style={{ marginBottom: "1rem", fontSize: "14px", color: "#667085" }}
+        >
+          Select the apps this user should have access to.
+        </div>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+        >
+          {["Tracker", "Sales", "Recruit", "Market"].map((app) => (
+            <FormControlLabel
+              key={app}
+              control={
+                <Checkbox
+                  size="small"
+                  checked={selectedApps.includes(app.toLowerCase())}
+                  onChange={() => handleToggle(app.toLowerCase())}
+                />
+              }
+              label={<span style={{ fontSize: "14px" }}>{app}</span>}
+            />
+          ))}
+        </div>
+      </div>
+    </DialogBox>
+  );
+};

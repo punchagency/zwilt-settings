@@ -1,5 +1,7 @@
 import * as yup from "yup";
 
+type TGetUserCommon = any;
+
 export const validationSchema = yup.object({
   title: yup.string().required("Required"),
   firstName: yup.string().required("Required"),
@@ -23,12 +25,13 @@ export const validationSchema = yup.object({
   salary: yup.string(),
   officialPersonalEmail: yup.string(),
   officialEmail: yup.string(),
-  email: yup.string()
+  email: yup
+    .string()
     .email("Please enter a valid email address")
     .required("Email is required")
     .matches(
       /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-      "Please enter a valid email address"
+      "Please enter a valid email address",
     ),
   profileImage: yup.string(),
   assignedRole: yup.string().required("Required"),
@@ -45,8 +48,16 @@ export const validationSchema = yup.object({
   secondaryContactRelation2: yup.string(),
   secondaryContactPhoneNumber2: yup.string(),
   attachedOrganizationId: yup.string(),
-  annualLeaveBalance: yup.number().min(0, "Must be a positive number").default(14),
-  probationPeriod: yup.number().min(1, "Must be at least 1 month").max(12, "Cannot exceed 12 months").default(3),
+  annualLeaveBalance: yup
+    .number()
+    .min(0, "Must be a positive number")
+    .default(14),
+  probationPeriod: yup
+    .number()
+    .min(1, "Must be at least 1 month")
+    .max(12, "Cannot exceed 12 months")
+    .default(3),
+  appAccess: yup.array().of(yup.string().required()).default(["tracker"]),
 });
 
 export type IInitialValues = yup.InferType<typeof validationSchema>;
@@ -91,6 +102,7 @@ export const initialValues: IInitialValues = {
   attachedOrganizationId: "",
   annualLeaveBalance: 14,
   probationPeriod: 3,
+  appAccess: ["tracker"],
 };
 
 export const generateInviteUserPayLoad = (data: IInitialValues) => {
@@ -103,6 +115,7 @@ export const generateInviteUserPayLoad = (data: IInitialValues) => {
     profileImg: data?.profileImage,
     organization: data?.attachedOrganizationId,
     location: data?.location,
+    appAccess: data?.appAccess || [],
   };
 };
 
@@ -118,6 +131,7 @@ export const generateEditUserPayLoad = (data: IInitialValues) => {
     location: data?.location,
     annualLeaveBalance: data?.annualLeaveBalance ?? 14,
     probationPeriod: data?.probationPeriod ?? 3,
+    appAccess: data?.appAccess || [],
   };
 };
 
@@ -134,6 +148,8 @@ export const transformUserDataToFormikFormat = (data: TGetUserCommon) => {
     teamId: (data as any)?.teamId || "",
     annualLeaveBalance: (data as any)?.annualLeaveBalance ?? 14,
     probationPeriod: (data as any)?.probationPeriod ?? 3,
+    appAccess: (data as any)?.appAccess ||
+      (data as any)?.zwiltAppAccess || ["tracker"],
   };
 };
 

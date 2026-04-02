@@ -88,10 +88,6 @@ function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
   const [profileImage, setProfileImage] = useState("");
   const [editInitialState, setEditInitialState] = useState<IInitialValues>();
   const [userData, setUserData] = useState<any>(null);
-  const [projects, setProjects] = useState<Array<any>>([]);
-  const [filteredProjects, setFilteredProjects] = useState<Array<any>>([]);
-  const [selectedProjects, setSelectedProjects] = useState<Array<string>>([]);
-  const [projectSearchQuery, setProjectSearchQuery] = useState("");
   const { locationOptions, loading: locationsLoading } = useLocationOptions();
 
   const [inviteUser, { data, loading, error }] = useMutation(INVITE_USER, {
@@ -114,30 +110,6 @@ function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
       } else {
         notifyErrorFxn(error?.message || "Failed to send invite");
       }
-    },
-  });
-
-  const [getProjects] = useLazyQuery(GET_PROJECTS_DATA, {
-    context: { clientName: "tracker" },
-    fetchPolicy: "network-only",
-    variables: {
-      input: {
-        organization: user?.userData?.attachedOrganization?._id,
-      },
-    },
-    onCompleted: (data) => {
-      console.log("Projects data:", data);
-      const projectsData = data?.getProjects?.data || [];
-      // Filter only active projects
-      const activeProjects = projectsData.filter(
-        (project: any) => project?.status === "ACTIVE",
-      );
-      setProjects(activeProjects);
-      setFilteredProjects(activeProjects);
-    },
-    onError: (error) => {
-      console.error("Projects fetch error:", error);
-      notifyErrorFxn(error?.message);
     },
   });
 
@@ -180,40 +152,9 @@ function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
   const [logo, setLogo] = useState<File | null>(null);
 
   const handleClose = () => {
-    setSelectedProjects([]);
-    setProjectSearchQuery("");
     onComplete && onComplete();
     onClose && onClose();
   };
-
-  useEffect(() => {
-    if (open && user?.userData?.attachedOrganization?._id) {
-      getProjects();
-    }
-  }, [open, user?.userData?.attachedOrganization?._id]);
-
-  useEffect(() => {
-    if (isEdit && router.query?.sId) {
-      fetchUser({
-        variables: {
-          userId: router.query.sId,
-        },
-      });
-    }
-  }, [isEdit, router.query?.sId, fetchUser]);
-
-  useEffect(() => {
-    if (projectSearchQuery.trim() === "") {
-      setFilteredProjects(projects);
-    } else {
-      const filtered = projects.filter((project) =>
-        (project.projectName || "")
-          .toLowerCase()
-          .includes(projectSearchQuery.toLowerCase()),
-      );
-      setFilteredProjects(filtered);
-    }
-  }, [projectSearchQuery, projects]);
 
   const handleImageSelect = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files && event.target.files[0];
@@ -250,31 +191,24 @@ function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
     }
   };
 
-  const onFileChange = async () => {
-    const data = await awsUpload({
-      file: logo as File,
-      fileName: logo?.name as string,
-      dirName: logo?.name as string,
-    });
-
-    setProfileImage(data?.location);
-  };
-
   useEffect(() => {
-    if (logo) {
-      onFileChange();
-    }
-  }, [logo]);
+    const uploadProfileImage = async () => {
+      if (logo) {
+        try {
+          const data = await awsUpload({
+            file: logo as File,
+            fileName: logo?.name as string,
+            dirName: logo?.name as string,
+          });
 
-  const handleProjectSelect = (projectId: string) => {
-    setSelectedProjects((prev) => {
-      if (prev.includes(projectId)) {
-        return prev.filter((id) => id !== projectId);
-      } else {
-        return [...prev, projectId];
+          setProfileImage(data?.location);
+        } catch (error) {
+          console.error("Profile image upload error:", error);
+        }
       }
-    });
-  };
+    };
+    uploadProfileImage();
+  }, [logo]);
 
   return (
     <Modal
@@ -314,23 +248,17 @@ function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
                   },
                 });
               } else {
-                if (selectedProjects.length === 0) {
-                  notifyErrorFxn("Please select at least one project");
-                  return;
-                }
                 try {
                   const result = await inviteUser({
                     variables: {
                       input: {
-                        title: values.title,
-                        role: values.assignedRole,
-                        lastName: values.lastName,
-                        firstName: values.firstName,
-                        email: values.email,
-                        profileImg: profileImage,
-                        organization: user?.userData?.attachedOrganization?._id,
-                        projectIds: selectedProjects,
-                        location: values.location,
+                        ...generateInviteUserPayLoad({
+                          profileImage,
+                          ...values,
+                          attachedOrganizationId:
+                            user?.userData?.attachedOrganization?._id,
+                        }),
+                        projectIds: [],
                       },
                     },
                   });
@@ -387,6 +315,7 @@ function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
             isValid,
             dirty,
             values,
+            setFieldValue,
           }) => (
             <>
               {isEdit && userData && (
@@ -581,92 +510,43 @@ function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
                       fontSize: "0.875rem",
                     }}
                   >
-                    Assign Projects <span style={{ color: "red" }}>*</span>
+                    App Access
                   </div>
-
-                  <TextField
-                    fullWidth
-                    size="small"
-                    placeholder="Search projects..."
-                    value={projectSearchQuery}
-                    onChange={(e) => setProjectSearchQuery(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon fontSize="small" />
-                        </InputAdornment>
-                      ),
-                      style: {
-                        fontSize: "0.875rem",
-                        borderRadius: "8px",
-                      },
-                    }}
-                    style={{ marginBottom: "0.5rem" }}
-                  />
-
                   <div
                     style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "0.5rem",
                       border: "1px solid #D0D5DD",
                       borderRadius: "8px",
                       padding: "0.5rem",
-                      maxHeight: "150px",
-                      overflowY: "auto",
-                      marginTop: "0.5rem",
                     }}
                   >
-                    {filteredProjects.length > 0 ? (
-                      filteredProjects.map((project) => (
-                        <div
-                          key={project._id}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            marginBottom: "0.5rem",
-                          }}
-                        >
+                    {["Tracker", "Sales", "Recruit", "Market"].map((app) => (
+                      <FormControlLabel
+                        key={app}
+                        control={
                           <Checkbox
-                            checked={selectedProjects.includes(project._id)}
-                            onChange={() => handleProjectSelect(project._id)}
-                            style={{
-                              marginRight: "0.5rem",
+                            size="small"
+                            checked={values.appAccess?.includes(
+                              app.toLowerCase(),
+                            )}
+                            onChange={() => {
+                              const currentApps = values.appAccess || [];
+                              const appName = app.toLowerCase();
+                              const newApps = currentApps.includes(appName)
+                                ? currentApps.filter((a) => a !== appName)
+                                : [...currentApps, appName];
+                              setFieldValue("appAccess", newApps);
                             }}
                           />
-                          <span>{project.projectName}</span>
-                        </div>
-                      ))
-                    ) : projectSearchQuery ? (
-                      <div
-                        style={{
-                          color: "#667085",
-                          fontStyle: "italic",
-                          padding: "0.5rem",
-                        }}
-                      >
-                        No projects match your search
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          color: "#667085",
-                          fontStyle: "italic",
-                          padding: "0.5rem",
-                        }}
-                      >
-                        No projects available
-                      </div>
-                    )}
+                        }
+                        label={
+                          <span style={{ fontSize: "0.875rem" }}>{app}</span>
+                        }
+                      />
+                    ))}
                   </div>
-                  {selectedProjects.length === 0 && (
-                    <div
-                      style={{
-                        color: "red",
-                        fontSize: "0.75rem",
-                        marginTop: "0.25rem",
-                      }}
-                    >
-                      Please select at least one project
-                    </div>
-                  )}
                 </div>
               </FormWrapper>
 

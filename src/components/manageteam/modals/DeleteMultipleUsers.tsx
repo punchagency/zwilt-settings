@@ -4,13 +4,17 @@ interface DeleteMultipleAdminProps {
   selectedUserCount: number;
   handleCloseModal: () => void;
   onDeleteTeamMember: () => void;
+  billingSeats?: number;
 }
 
 const DeleteMultipleUsers: React.FC<DeleteMultipleAdminProps> = ({
   selectedUserCount,
   handleCloseModal,
   onDeleteTeamMember,
+  billingSeats = 0,
 }) => {
+  const newSeats = Math.max(0, billingSeats - selectedUserCount);
+  const newTotal = (newSeats * 99.99).toFixed(2);
   // Handle click outside the modal
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
@@ -38,9 +42,14 @@ const DeleteMultipleUsers: React.FC<DeleteMultipleAdminProps> = ({
             </h3>
             <p className="font-normal text-[0.73vw] leading-[0.94vw] text-center text-[#667085]">
               Are you sure you want to delete the selected user
-              {selectedUserCount > 1 ? "s" : ""}? Once these deleted, you have
-              to add it again.
+              {selectedUserCount > 1 ? "s" : ""}? Once deleted, you have
+              to add them again.
             </p>
+            {billingSeats > 0 && (
+              <p className="font-normal text-[0.68vw] leading-[0.94vw] text-center text-[#F97066] mt-[0.26vw]">
+                Removes {selectedUserCount} billed seat{selectedUserCount > 1 ? "s" : ""} — plan goes from {billingSeats} to {newSeats} seats (${newTotal}/mo).
+              </p>
+            )}
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation } from "@apollo/client";
 import { notifyErrorFxn, notifySuccessFxn } from "utils/toast-fxn";
-import { GET_ORGANIZATION_MEMBERS } from "@/graphql/queries/manageTeam";
+import { GET_ORGANIZATION_MEMBERS, GET_ORG_BILLING_PREVIEW } from "@/graphql/queries/manageTeam";
 import { DELETE_MEMBER_FROM_ORGANIZATION } from "@/graphql/mutations/manageTeam";
 import { OrganizationMember, User } from "./manageteam-role/user.interface";
 import ManageAdmin from "./manageteam-role/ManageAdmin";
@@ -30,10 +30,14 @@ const ManageOrganization: React.FC<Props> = ({
     context: { clientName: "tracker" },
   });
 
+  const { data: billingData } = useQuery(GET_ORG_BILLING_PREVIEW);
+  const billingSeats: number = billingData?.getOrgBillingPreview?.data?.seats ?? 0;
+
   const [deleteMembersFromOrganization] = useMutation(
     DELETE_MEMBER_FROM_ORGANIZATION,
     {
       context: { clientName: "tracker" },
+      refetchQueries: [{ query: GET_ORG_BILLING_PREVIEW }],
       onCompleted: () => {
         setUserToDelete(null);
       },
@@ -79,6 +83,7 @@ const ManageOrganization: React.FC<Props> = ({
         isAdmin={isAdmin}
         userToDelete={userToDelete}
         setUserToDelete={setUserToDelete}
+        billingSeats={billingSeats}
       />
       <div className="w-full border-b border-[#e0e0e9]"></div>
       <ManageMembers

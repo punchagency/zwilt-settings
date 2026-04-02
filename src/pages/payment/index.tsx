@@ -1,10 +1,13 @@
-import PantreiIcon from "@/assests/icons/ZwiltTracker2.png";
-import ZwiltIcon from "@/assests/icons/zwiltlogo.svg";
-import AddIcon from "@/assests/images/add-icon.png";
-import Recrowdly from "@/assests/images/recrowdly.png";
-import CustomDropdown from "@/components/customdropdown"; // Import the CustomDropdown component
 import Invoices from "@/components/invoice";
 import PaymentMethods from "@/components/paymentmethod";
+import SalesLogo from "@/assests/icons/Logo=Sales App.svg";
+import StoreLogo from "@/assests/icons/Logo=Store.svg";
+import TrackerLogo from "@/assests/icons/Logo=Tracker2.svg";
+import MarketLogo from "@/assests/icons/Recrowdly.png";
+import PantreiIcon from "@/assests/icons/ZwiltTracker2.png";
+import CustomDropdown from "@/components/customdropdown";
+import AddIcon from "@/assests/images/add-icon.png";
+import ZwiltIcon from "@/assests/icons/zwiltlogo.svg";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
@@ -13,10 +16,7 @@ import useUser from "utils/recoil_store/hooks/use-user-state";
 import { GetAIUsageDashboard } from "@/graphql/queries/aiCredits";
 import SubscriptionTiers from "@/components/ai-credits/SubscriptionTiers";
 import { Skeleton } from "@mui/material";
-import {
-  GET_ORG_BILLING_PREVIEW,
-  GET_ORGANIZATION_MEMBERS,
-} from "@/graphql/queries/manageTeam";
+import { GET_ORG_BILLING_PREVIEW } from "@/graphql/queries/manageTeam";
 import { get_invoices } from "@/graphql/queries/invoices";
 
 const customActiveUnderlineStyle: React.CSSProperties = {
@@ -47,12 +47,13 @@ const BillingSummary: React.FC = () => {
     },
   );
 
-  const { data: orgBillingData, loading: orgBillingLoading } = useQuery(
-    GET_ORG_BILLING_PREVIEW,
-    {
-      fetchPolicy: "network-only",
-    },
-  );
+  const {
+    data: orgBillingData,
+    loading: orgBillingLoading,
+    error: orgBillingError,
+  } = useQuery(GET_ORG_BILLING_PREVIEW, {
+    fetchPolicy: "network-only",
+  });
 
   const { data: invoicesData, loading: invoicesLoading } = useQuery(
     get_invoices,
@@ -63,17 +64,21 @@ const BillingSummary: React.FC = () => {
     },
   );
 
-  const { data: membersData, loading: membersLoading } = useQuery(
-    GET_ORGANIZATION_MEMBERS,
-    {
-      fetchPolicy: "network-only",
-    },
-  );
-
-  const billedMembers =
-    membersData?.getOrganizationMembers?.data?.filter(
-      (m: any) => m.isBilledSeat,
-    ) || [];
+  useEffect(() => {
+    console.log("Billing Page Data:", {
+      orgBillingData,
+      orgBillingLoading,
+      orgBillingError,
+      invoicesData,
+      invoicesLoading,
+    });
+  }, [
+    orgBillingData,
+    orgBillingLoading,
+    orgBillingError,
+    invoicesData,
+    invoicesLoading,
+  ]);
 
   useEffect(() => {
     if (query.tab) {
@@ -96,13 +101,14 @@ const BillingSummary: React.FC = () => {
   const handleDownloadCSV = () => {
     if (!orgBillingData?.getOrgBillingPreview?.data) return;
 
-    const data = [
-      {
-        product: "Zwilt Tracker",
-        amount: `USD $${orgBillingData.getOrgBillingPreview.data.total.toFixed(2)}`,
-        seats: orgBillingData.getOrgBillingPreview.data.seats,
-      },
-    ];
+    const data =
+      orgBillingData?.getOrgBillingPreview?.data?.services?.map(
+        (service: any) => ({
+          product: service.name,
+          amount: `USD $${service.total.toFixed(2)}`,
+          seats: service.seats,
+        }),
+      ) || [];
 
     const csvRows = [Object.keys(data[0]).join(",")];
 
@@ -299,13 +305,14 @@ const BillingSummary: React.FC = () => {
                           >
                             <td className="text-start py-[1.04vw]">
                               <span className="text-[0.83vw] font-medium text-left text-[#6F6F76]">
-                                {new Date(
-                                  invoice.createdAtz,
-                                ).toLocaleDateString("en-US", {
-                                  month: "long",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}
+                                {new Date(invoice.createdAt).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    month: "long",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  },
+                                )}
                               </span>
                             </td>
 
@@ -345,10 +352,10 @@ const BillingSummary: React.FC = () => {
                   <h2 className="text-[1.67vw] font-semibold text-very-dark-grayish-blue">
                     Grand Total:{" "}
                     <span>
-                      USD ${" "}
+                      USD $
                       {orgBillingData?.getOrgBillingPreview?.data?.total?.toFixed(
                         2,
-                      ) || "0.00"}{" "}
+                      ) || "0.00"}
                     </span>
                   </h2>
                 </div>
@@ -394,338 +401,168 @@ const BillingSummary: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="w-full relative">
-                      <tr
-                        className={`w-full ${
-                          expandedProducts.includes("Zwilt Tracker")
-                            ? ""
-                            : "border-b"
-                        } border-[#E0E0E9]`}
-                      >
-                        <td className="text-start py-[1.04vw]">
-                          <div className="flex items-center justify-start">
-                            <Image
-                              className="cursor-pointer w-[1.25vw] h-[1.25vw]"
-                              width={100}
-                              height={100}
-                              src={AddIcon}
-                              quality={100}
-                              alt=""
-                              onClick={() =>
-                                toggleProductExpansion("Zwilt Tracker")
-                              }
-                            />
-
-                            <Image
-                              className="cursor-pointer w-[1.82vw] h-[1.14vw] ml-[0.89vw]"
-                              width={100}
-                              height={100}
-                              src={ZwiltIcon}
-                              quality={100}
-                              alt=""
-                            />
-                            <p className="text-[0.83vw] font-medium text-very-dark-grayish-blue ml-[0.89vw]">
-                              Zwilt Tracker
-                            </p>
-                          </div>
-                        </td>
-
-                        <td className="text-center py-[1.04vw]">
-                          <span className="text-[0.83vw] font-medium text-left  ml-[5.5vw]  text-very-dark-grayish-blue">
-                            USD $
-                            {orgBillingData?.getOrgBillingPreview?.data?.total?.toFixed(
-                              2,
-                            ) || "0.00"}
-                          </span>
-                        </td>
-                      </tr>
-                      {expandedProducts.includes("Zwilt Tracker") && (
+                      {orgBillingLoading ? (
                         <tr>
-                          <td colSpan={2} className="p-0">
-                            <div className="w-[69.25vw]   border  border-t-1 border-[#E0E0E9] rounded-[1.041vw] overflow-x-auto">
-                              <table className="w-full table-fixed">
-                                <thead>
-                                  <tr className="bg-[#F4F4FA] border-b border-[#E0E0E9] text-[0.83vw]">
-                                    <th className="text-left py-[0.625vw] px-[1.5vw]">
-                                      User
-                                    </th>
-                                    <th className="text-right py-[0.625vw]  ">
-                                      Quantity
-                                    </th>
-                                    <th className="text-right py-[0.625vw] px-[1.5vw]">
-                                      Price
-                                    </th>
-                                    <th className="text-right py-[0.625vw] px-[2.25vw]">
-                                      Charges
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  <tr className="border-b border-[#E0E0E9] text-[0.83vw]">
-                                    <td className="py-[0.83vw] px-[1.4vw]">
-                                      Admin User
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      2
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[0.8vw]">
-                                      $10/Seat
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      USD $20.00
-                                    </td>
-                                  </tr>
-                                  <tr className="border-b border-[#E0E0E9] text-[0.83vw]">
-                                    <td className="py-[0.83vw] px-[1.4vw]">
-                                      Recruiter
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      1
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[0.8vw]">
-                                      $50/Seat
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      USD $10.00
-                                    </td>
-                                  </tr>
-                                  <tr className="text-[0.83vw]">
-                                    <td className="py-[0.83vw] px-[1.4vw] ">
-                                      Account User
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      5
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[0.8vw]">
-                                      $20/Seat
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      USD $25.00
-                                    </td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                            </div>
+                          <td colSpan={2} className="py-4">
+                            <Skeleton variant="rectangular" height={100} />
                           </td>
                         </tr>
-                      )}
-                      {/* recrowdly */}
-                      <tr
-                        className={`w-full ${
-                          expandedProducts.includes("recrowdly")
-                            ? ""
-                            : "border-b border-[#E0E0E9]"
-                        }`}
-                      >
-                        <td className="text-start py-[1.04vw]">
-                          <div className="flex items-center justify-start">
-                            <Image
-                              className="cursor-pointer w-[1.25vw] h-[1.25vw]"
-                              width={100}
-                              height={100}
-                              src={AddIcon}
-                              quality={100}
-                              alt=""
-                              onClick={() =>
-                                toggleProductExpansion("recrowdly")
-                              }
-                            />
-                            <Image
-                              className="cursor-pointer w-[1.67vw] h-[1.67vw] ml-[0.89vw]"
-                              width={100}
-                              height={100}
-                              src={Recrowdly}
-                              quality={100}
-                              alt=""
-                              onClick={() =>
-                                toggleProductExpansion("recrowdly")
-                              }
-                            />
-                            <p className="text-[0.83vw] font-medium text-very-dark-grayish-blue ml-[0.89vw]">
-                              Recrowdly
-                            </p>
-                          </div>
-                        </td>
-                        <td className="text-center py-[1.04vw]">
-                          <span className="text-[0.83vw] font-medium text-left ml-[5.5vw] text-very-dark-grayish-blue">
-                            USD $32.00
-                          </span>
-                        </td>
-                      </tr>
-                      {expandedProducts.includes("recrowdly") && (
+                      ) : orgBillingError ? (
                         <tr>
-                          <td colSpan={2} className="p-0">
-                            <div className="w-[69.25vw] border border-[#E0E0E9] rounded-[1.041vw] overflow-x-auto">
-                              <table className="w-full table-fixed">
-                                <thead>
-                                  <tr className="bg-[#F4F4FA] border-b border-[#E0E0E9] text-[0.83vw]">
-                                    <th className="text-left py-[0.625vw] px-[1.5vw]">
-                                      User
-                                    </th>
-                                    <th className="text-right py-[0.625vw]">
-                                      Quantity
-                                    </th>
-                                    <th className="text-right py-[0.625vw] px-[1.5vw]">
-                                      Price
-                                    </th>
-                                    <th className="text-right py-[0.625vw] px-[2.25vw]">
-                                      Charges
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  <tr className="border-b border-[#E0E0E9] text-[0.83vw]">
-                                    <td className="py-[0.83vw] px-[1.4vw]">
-                                      Admin User
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      4
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[0.8vw]">
-                                      $40/Seat
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      USD $80.00
-                                    </td>
-                                  </tr>
-                                  <tr className="border-b border-[#E0E0E9] text-[0.83vw]">
-                                    <td className="py-[0.83vw] px-[1.4vw]">
-                                      Recruiter
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      2
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[0.8vw]">
-                                      $15/Seat
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      USD $30.00
-                                    </td>
-                                  </tr>
-                                  <tr className="text-[0.83vw]">
-                                    <td className="py-[0.83vw] px-[1.4vw]">
-                                      Account User
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      10
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[0.8vw]">
-                                      $5/Seat
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      USD $10.00
-                                    </td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                            </div>
+                          <td
+                            colSpan={2}
+                            className="py-10 text-center text-red-500"
+                          >
+                            Error loading billing data:{" "}
+                            {orgBillingError.message}
                           </td>
                         </tr>
-                      )}
-
-                      {/* pantrei */}
-                      <tr className="w-full">
-                        <td className="text-end py-[1.04vw]">
-                          <div className="flex items-center justify-start">
-                            <Image
-                              className="cursor-pointer w-[1.25vw] h-[1.25vw]"
-                              width={100}
-                              height={100}
-                              src={AddIcon}
-                              quality={100}
-                              alt=""
-                              onClick={() => toggleProductExpansion("pantrei")}
-                            />
-
-                            <Image
-                              className="cursor-pointer w-[1.67vw] h-[1.67vw] ml-[0.89vw]"
-                              width={100}
-                              height={100}
-                              src={PantreiIcon}
-                              quality={100}
-                              alt=""
-                              onClick={() => toggleProductExpansion("pantrei")}
-                            />
-                            <p className="text-[0.83vw] font-medium text-very-dark-grayish-blue ml-[0.89vw]">
-                              Pantrei
-                            </p>
-                          </div>
-                        </td>
-
-                        <td className="text-center py-[1.04vw]">
-                          <span className="text-[0.83vw] font-medium text-left  ml-[5.5vw]  text-very-dark-grayish-blue">
-                            USD $18.00
-                          </span>
-                        </td>
-                      </tr>
-                      {expandedProducts.includes("pantrei") && (
+                      ) : orgBillingData?.getOrgBillingPreview?.data?.services
+                          ?.length === 0 ? (
                         <tr>
-                          <td colSpan={2} className="pb-[1vw]">
-                            <div className="w-[69.25vw] border border-[#E0E0E9] rounded-[1.041vw] overflow-x-auto">
-                              <table className="w-full table-fixed pb-[0.5vw]">
-                                <thead>
-                                  <tr className="bg-[#F4F4FA] border-b border-[#E0E0E9] text-[0.83vw]">
-                                    <th className="text-left py-[0.625vw] px-[1.5vw]">
-                                      User
-                                    </th>
-                                    <th className="text-right py-[0.625vw]">
-                                      Quantity
-                                    </th>
-                                    <th className="text-right py-[0.625vw] px-[1.5vw]">
-                                      Price
-                                    </th>
-                                    <th className="text-right py-[0.625vw] px-[2.25vw]">
-                                      Charges
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  <tr className="border-b border-[#E0E0E9] text-[0.83vw]">
-                                    <td className="py-[0.83vw] px-[1.4vw]">
-                                      Admin User
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      6
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[0.8vw]">
-                                      $70/Seat
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      USD $35.00
-                                    </td>
-                                  </tr>
-                                  <tr className="border-b border-[#E0E0E9] text-[0.83vw]">
-                                    <td className="py-[0.83vw] px-[1.4vw]">
-                                      Recruiter
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      4
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[0.8vw]">
-                                      $50/Seat
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      USD $60.00
-                                    </td>
-                                  </tr>
-                                  <tr className="text-[0.83vw]">
-                                    <td className="py-[0.83vw] px-[1.4vw]">
-                                      Account User
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      15
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[0.8vw]">
-                                      $40/Seat
-                                    </td>
-                                    <td className="text-right py-[0.83vw] px-[1.5vw]">
-                                      USD $89.00
-                                    </td>
-                                  </tr>
-                                </tbody>
-                              </table>
-                            </div>
+                          <td
+                            colSpan={2}
+                            className="py-10 text-center text-gray-500"
+                          >
+                            No active services found.
                           </td>
                         </tr>
+                      ) : (
+                        orgBillingData?.getOrgBillingPreview?.data?.services?.map(
+                          (service: any) => (
+                            <React.Fragment key={service.name}>
+                              <tr
+                                className={`w-full ${
+                                  expandedProducts.includes(service.name)
+                                    ? ""
+                                    : "border-b"
+                                } border-[#E0E0E9]`}
+                              >
+                                <td className="text-start py-[1.04vw]">
+                                  <div className="flex items-center justify-start">
+                                    <Image
+                                      className="cursor-pointer w-[1.25vw] h-[1.25vw]"
+                                      width={100}
+                                      height={100}
+                                      src={AddIcon}
+                                      quality={100}
+                                      alt=""
+                                      onClick={() =>
+                                        toggleProductExpansion(service.name)
+                                      }
+                                    />
+
+                                    <Image
+                                      className="cursor-pointer w-[1.82vw] h-[1.14vw] ml-[0.89vw]"
+                                      width={100}
+                                      height={100}
+                                      src={
+                                        service.name
+                                          .toLowerCase()
+                                          .includes("tracker") ||
+                                        service.name
+                                          .toLowerCase()
+                                          .includes("track")
+                                          ? TrackerLogo
+                                          : service.name
+                                                .toLowerCase()
+                                                .includes("sales") ||
+                                              service.name
+                                                .toLowerCase()
+                                                .includes("sell")
+                                            ? SalesLogo
+                                            : service.name
+                                                  .toLowerCase()
+                                                  .includes("recruit")
+                                              ? StoreLogo
+                                              : service.name
+                                                    .toLowerCase()
+                                                    .includes("market")
+                                                ? MarketLogo
+                                                : ZwiltIcon
+                                      }
+                                      quality={100}
+                                      alt=""
+                                    />
+                                    <p className="text-[0.83vw] font-medium text-very-dark-grayish-blue ml-[0.89vw]">
+                                      {service.name}
+                                    </p>
+                                  </div>
+                                </td>
+
+                                <td className="text-center py-[1.04vw]">
+                                  <span className="text-[0.83vw] font-medium text-left ml-[5.5vw] text-very-dark-grayish-blue">
+                                    USD ${service.total.toFixed(2)}
+                                  </span>
+                                </td>
+                              </tr>
+                              {expandedProducts.includes(service.name) && (
+                                <tr>
+                                  <td colSpan={2} className="p-0">
+                                    <div className="w-[69.25vw] border border-t-1 border-[#E0E0E9] rounded-[1.041vw] overflow-x-auto mb-[1vw]">
+                                      <table className="w-full table-fixed">
+                                        <thead>
+                                          <tr className="bg-[#F4F4FA] border-b border-[#E0E0E9] text-[0.83vw]">
+                                            <th className="text-left py-[0.625vw] px-[1.5vw]">
+                                              Service
+                                            </th>
+                                            <th className="text-right py-[0.625vw]">
+                                              Seats
+                                            </th>
+                                            <th className="text-right py-[0.625vw] px-[1.5vw]">
+                                              Price
+                                            </th>
+                                            <th className="text-right py-[0.625vw] px-[2.25vw]">
+                                              Charges
+                                            </th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          <tr className="text-[0.83vw]">
+                                            <td className="py-[0.83vw] px-[1.4vw]">
+                                              {service.name} (Total)
+                                            </td>
+                                            <td className="text-right py-[0.83vw] px-[1.5vw]">
+                                              {service.seats}
+                                            </td>
+                                            <td className="text-right py-[0.83vw] px-[0.8vw]">
+                                              ${service.pricePerSeat}/Seat
+                                            </td>
+                                            <td className="text-right py-[0.83vw] px-[1.5vw]">
+                                              USD ${service.total.toFixed(2)}
+                                            </td>
+                                          </tr>
+                                          {service.coreSeats > 0 && (
+                                            <tr className="text-[0.73vw] text-gray-500 italic">
+                                              <td className="py-[0.4vw] px-[2vw]">
+                                                ↳ Core Database Seats
+                                              </td>
+                                              <td className="text-right py-[0.4vw] px-[1.5vw]">
+                                                {service.coreSeats}
+                                              </td>
+                                              <td colSpan={2}></td>
+                                            </tr>
+                                          )}
+                                          {service.trackerSeats > 0 && (
+                                            <tr className="text-[0.73vw] text-gray-500 italic border-b border-[#F4F4FA]">
+                                              <td className="py-[0.4vw] px-[2vw]">
+                                                ↳ Legacy Tracker Seats
+                                              </td>
+                                              <td className="text-right py-[0.4vw] px-[1.5vw]">
+                                                {service.trackerSeats}
+                                              </td>
+                                              <td colSpan={2}></td>
+                                            </tr>
+                                          )}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          ),
+                        )
                       )}
                     </tbody>
                   </table>
@@ -736,7 +573,12 @@ const BillingSummary: React.FC = () => {
         )}
 
         {activeTab === "Payment Methods" && <PaymentMethods />}
-        {activeTab === "Invoices" && <Invoices />}
+        {activeTab === "Invoices" && (
+          <Invoices
+            rawInvoices={invoicesData?.getInvoices?.data}
+            loading={invoicesLoading}
+          />
+        )}
         {activeTab === "AI Credits Plan" && (
           <div className="pt-[2.08vw] pb-[1.04vw] px-[1.56vw]">
             {dashboardLoading ? (

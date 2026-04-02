@@ -1,25 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { styled } from "@mui/material";
+import { styled, Skeleton, Box } from "@mui/material";
 import palettes from "@/constants/palettes";
 import Input from "@/components/common/input";
 import AddUserUpload from "./add-user-upload";
 import { Formik, useFormikContext } from "formik";
-import Button from "../common/button";
+import Button from "@/components/common/button";
 import { useLazyQuery, useMutation } from "@apollo/react-hooks";
 import { INVITE_USER, UPDATE_USER } from "@/graphql/mutations/user";
 import {
   IInitialValues,
   Role,
   UserTitle,
+  generateInviteUserPayLoad,
   generateEditUserPayLoad,
   initialValues,
   transformUserDataToFormikFormat,
   validationSchema,
 } from "./formHelper";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
 
 import { notifyErrorFxn, notifySuccessFxn } from "@/utils/toast-fxn";
 import { useRouter } from "next/router";
-import { awsUpload } from "../../utils/uploadMedaia";
+import { awsUpload } from "@/utils/uploadMedaia";
 import { GET_USER_BY_ID } from "@/graphql/queries/auth";
 import { useRecoilState, useRecoilValue } from "recoil";
 import userAtom from "@/atoms/user-atom";
@@ -174,10 +177,58 @@ const AddUserForms = () => {
         },
       });
     }
-  }, [teams.length, runGetTeamsQuery, isEdit, isView, router.query?.sId]);
+  }, [
+    teams.length,
+    runGetTeamsQuery,
+    isEdit,
+    isView,
+    router.query?.sId,
+    fetchUser,
+    setTeamAtomState,
+  ]);
 
   if ((isEdit || isView) && !editInitialState) {
-    return <div>Loading...</div>;
+    return (
+      <ProfileFormsContainer>
+        <Skeleton variant="text" width="200px" height={40} sx={{ mb: 2 }} />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 4 }}>
+          <Skeleton variant="circular" width={80} height={80} />
+          <Box>
+            <Skeleton variant="text" width="150px" height={30} />
+            <Skeleton variant="text" width="100px" height={20} />
+          </Box>
+        </Box>
+        {[...Array(3)].map((_, i) => (
+          <Box key={i} sx={{ mb: 4 }}>
+            <Skeleton variant="text" width="150px" height={30} sx={{ mb: 2 }} />
+            <Box
+              sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 3 }}
+            >
+              <Skeleton
+                variant="rectangular"
+                height={50}
+                sx={{ borderRadius: 1 }}
+              />
+              <Skeleton
+                variant="rectangular"
+                height={50}
+                sx={{ borderRadius: 1 }}
+              />
+              <Skeleton
+                variant="rectangular"
+                height={50}
+                sx={{ borderRadius: 1 }}
+              />
+              <Skeleton
+                variant="rectangular"
+                height={50}
+                sx={{ borderRadius: 1 }}
+              />
+            </Box>
+          </Box>
+        ))}
+      </ProfileFormsContainer>
+    );
   }
 
   return (
@@ -202,20 +253,17 @@ const AddUserForms = () => {
             },
           });
         } else {
-          const invitePayload = {
-            title: values.title,
-            role: values.assignedRole,
-            lastName: values.lastName,
-            firstName: values.firstName,
-            email: values.email,
-            profileImg: profileImage || "",
-            organization: Ruser?.userData?.attachedOrganization?._id,
-            location: values.location || "",
-            projectIds: [],
-          };
           inviteUser({
             variables: {
-              input: invitePayload,
+              input: {
+                ...generateInviteUserPayLoad({
+                  profileImage,
+                  ...values,
+                  attachedOrganizationId:
+                    Ruser?.userData?.attachedOrganization?._id,
+                }),
+                projectIds: [],
+              },
             },
           });
         }
@@ -330,6 +378,52 @@ const AddUserForms = () => {
                 disabled={teamsLoading}
               />
             </InputContainer>
+
+            <div style={{ marginBottom: "2rem" }}>
+              <div
+                style={{
+                  fontWeight: 500,
+                  lineHeight: "1.5rem",
+                  color: "#101828",
+                  marginBottom: "0.5rem",
+                  display: "block",
+                  fontSize: "0.875rem",
+                }}
+              >
+                App Access
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "0.5rem",
+                  border: "1px solid #D0D5DD",
+                  borderRadius: "8px",
+                  padding: "0.5rem",
+                }}
+              >
+                {["Tracker", "Sales", "Recruit", "Market"].map((app) => (
+                  <FormControlLabel
+                    key={app}
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={values.appAccess?.includes(app.toLowerCase())}
+                        onChange={() => {
+                          const currentApps = values.appAccess || [];
+                          const appName = app.toLowerCase();
+                          const newApps = currentApps.includes(appName)
+                            ? currentApps.filter((a) => a !== appName)
+                            : [...currentApps, appName];
+                          setFieldValue("appAccess", newApps);
+                        }}
+                      />
+                    }
+                    label={<span style={{ fontSize: "0.875rem" }}>{app}</span>}
+                  />
+                ))}
+              </div>
+            </div>
             <InputContainer>
               <Input
                 type="select"

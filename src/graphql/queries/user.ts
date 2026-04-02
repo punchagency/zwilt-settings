@@ -73,6 +73,7 @@ export const GET_USERS = gql`
         status
         location
         isBilledSeat
+        zwiltAppAccess
       }
     }
   }

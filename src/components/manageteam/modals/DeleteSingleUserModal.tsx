@@ -5,17 +5,18 @@ import ProfileAvatar from "@/components/profileAvatar/ProfileAvatar";
 
 interface DeleteTeamProps {
   userToDelete: any;
-  // onDeleteTeamMember: () => void;
   handleDeleteMember: () => void;
   handleCloseModal: () => void;
+  billingSeats?: number;
 }
 
 const DeleteTeamModal: React.FC<DeleteTeamProps> = ({
   userToDelete,
-  // onDeleteTeamMember,
   handleDeleteMember,
   handleCloseModal,
+  billingSeats = 0,
 }) => {
+  const newTotal = ((billingSeats - 1) * 99.99).toFixed(2);
   // Handle click outside the modal
   const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
@@ -43,6 +44,11 @@ const DeleteTeamModal: React.FC<DeleteTeamProps> = ({
                 Are you sure you want to delete this user? Once deleted, you
                 have to add them again.
               </p>
+              {billingSeats > 0 && (
+                <p className="font-normal text-[0.68vw] leading-[0.94vw] text-center text-[#F97066] mt-[0.26vw]">
+                  This removes 1 billed seat — plan will go from {billingSeats} to {billingSeats - 1} seats (${newTotal}/mo).
+                </p>
+              )}
             </div>
           </div>
         )}

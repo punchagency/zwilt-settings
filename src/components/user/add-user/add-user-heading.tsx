@@ -2,14 +2,19 @@ import React from "react";
 import { styled } from "@mui/material";
 import palettes from "@/constants/palettes";
 import arrowImage from "@/assets/icons/dropdown-arrow.svg";
+import { useRouter } from "next/router";
 
 const AddUserHeading = () => {
+  const router = useRouter();
   return (
     <ProfileUploadContainer>
       <NavigationContainer>
-        <TextOne>User Management</TextOne>
+        <ClickableText onClick={() => router.push("/user-management")}>
+          User Management
+        </ClickableText>
         <img
           src={arrowImage.src}
+          alt="arrow"
           style={{
             transform: "rotateZ(-90deg)",
             width: "1.3rem",
@@ -67,6 +72,14 @@ const TextOne = styled("div")(({ theme }) => ({
   [theme.breakpoints.down("sm")]: {
     fontSize: "0.875rem",
     lineHeight: "20px",
+  },
+}));
+
+const ClickableText = styled(TextOne)(() => ({
+  cursor: "pointer",
+  "&:hover": {
+    textDecoration: "underline",
+    color: palettes?.blue[0],
   },
 }));
 

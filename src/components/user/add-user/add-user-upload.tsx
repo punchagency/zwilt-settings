@@ -1,7 +1,7 @@
 import React from "react";
 import { styled } from "@mui/material";
 import palettes from "@/constants/palettes";
-import ProfileFileUpload from "../common/profile-file-upload/ProfileFileUpload";
+import ProfileFileUpload from "@/components/common/profile-file-upload/ProfileFileUpload";
 import profileIcon from "@/assets/icons/profile.svg";
 import { useRouter } from "next/router";
 

@@ -30,6 +30,8 @@ export const APOLLO_STATE_PROP_NAME = "__APOLLO_STATE__";
 
 const isLocal = process.env.NEXT_PUBLIC_NODE_ENV === "local";
 const defaultLocalUrl = "http://localhost:5005/graphql";
+const trackerLocalUrl =
+  process.env.NEXT_PUBLIC_TRACKER_SERVER || "http://localhost:5001/graphql";
 
 const aiCreditsUrl =
   process.env.NEXT_PUBLIC_ZWILT_SERVER ||
@@ -51,7 +53,7 @@ function createApolloClient(headers?: any) {
   });
 
   const trackerLink = new HttpLink({
-    uri: isLocal ? defaultLocalUrl : "https://trackerserver.zwilt.com/graphql",
+    uri: isLocal ? trackerLocalUrl : "https://trackerserver.zwilt.com/graphql",
     fetch,
     credentials: "include",
     headers,

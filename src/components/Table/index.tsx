@@ -46,7 +46,7 @@ const CustomTableRow = styled("div")<CustomTableRowProps>(
   border-style: solid;
   border-color: #ebebeb;
   cursor: ${nested || clickable ? "pointer" : "default"};
-`
+`,
 );
 
 const CustomTableHead = styled("div")`
@@ -62,56 +62,12 @@ const CustomTableCell = styled("div")<CustomTableCellProps>(
     width: ${width}%;
     padding: ${padding};
 word-wrap: break-word;
-`
+`,
 );
 
 const CustomTableBody = styled("div")`
-  max-height: 40rem;
-  overflow-y: auto;
-
-  /* for webkit-based browsers */
-  ::-webkit-scrollbar {
-    width: 5px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: #f1f1f1;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 5px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: #555;
-  }
-
-  ::-webkit-scrollbar-corner {
-    background: #f1f1f1;
-  }
-
-  /* for Firefox */
-  .scrollbar {
-    width: 5px;
-  }
-
-  .scrollbar-track {
-    background: #f1f1f1;
-  }
-
-  .scrollbar-thumb {
-    background: #888;
-    border-radius: 5px;
-  }
-
-  .scrollbar-thumb:hover {
-    background: #555;
-  }
-
-  .scrollbar-corner {
-    background: #f1f1f1;
-  }
+  width: 100%;
+  overflow: visible;
 `;
 
 const NestedTableWrapper = styled("div")`
@@ -153,7 +109,7 @@ const CustomTable: React.FC<CustomTableProps> = ({
   function calculateItemIndices(
     totalItems: number,
     itemsPerPage: number,
-    currentPage: number
+    currentPage: number,
   ) {
     const firstItemIndex = (currentPage - 1) * itemsPerPage;
     const lastItemIndex =
@@ -182,7 +138,7 @@ const CustomTable: React.FC<CustomTableProps> = ({
 
   const getCellSize = () => {
     const columnsWithWidth = columns.filter(
-      (column) => column.width !== undefined
+      (column) => column.width !== undefined,
     );
     const columnWidths = columns.map((column) => column.width ?? 0);
     const width = columnWidths.reduce((accumulator, currentValue) => {
@@ -208,7 +164,7 @@ const CustomTable: React.FC<CustomTableProps> = ({
 
   const handleSelectChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    id: string | number
+    id: string | number,
   ) => {
     if (e.target.checked) {
       handleSelect(id);

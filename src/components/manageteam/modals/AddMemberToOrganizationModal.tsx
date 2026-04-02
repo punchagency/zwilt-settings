@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useMutation, useQuery } from "@apollo/client";
 import { ADD_MEMBER_TO_ORGANIZATION } from "@/graphql/mutations/manageTeam";
-import { GET_ORGANIZATION_MEMBERS } from "@/graphql/queries/manageTeam";
+import { GET_ORGANIZATION_MEMBERS, GET_ORG_BILLING_PREVIEW } from "@/graphql/queries/manageTeam";
 import Close from "@/assests/icons/close.svg";
 import Chevron from "@/assests/icons/chevron.svg";
 import Profile from "@/assests/images/img-placeholder.png";
@@ -43,6 +43,11 @@ const AddMemberToOrganizationModal: React.FC<addMemberProps> = ({
     context: { clientName: "tracker" },
   });
 
+  const { data: billingData } = useQuery(GET_ORG_BILLING_PREVIEW);
+  const currentSeats: number = billingData?.getOrgBillingPreview?.data?.seats ?? 0;
+
+  const [billingConfirm, setBillingConfirm] = useState(false);
+
   const selectUserbuttonRef = useRef<HTMLButtonElement>(null);
   const roleButtonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
@@ -80,9 +85,9 @@ const AddMemberToOrganizationModal: React.FC<addMemberProps> = ({
 
   const [addMemberToOrganization] = useMutation(ADD_MEMBER_TO_ORGANIZATION, {
     context: { clientName: "tracker" },
+    refetchQueries: [{ query: GET_ORG_BILLING_PREVIEW }],
     onCompleted: (data) => {
       try {
-        // Add the new member
         setCurrentModal(null);
       } catch (error) {
         console.error("Error updating state:", error);
@@ -94,26 +99,23 @@ const AddMemberToOrganizationModal: React.FC<addMemberProps> = ({
     },
   });
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const validateForm = (): boolean => {
     if (!firstName || !lastName || !email || !selectedRole) {
       notifyErrorFxn("Please fill in all fields.");
-      return;
+      return false;
     }
-
-    // Check if email already exists in members
     const emailExists = members.some(
       (member) => member?.user?.email?.toLowerCase() === email.toLowerCase(),
     );
-
     if (emailExists) {
       notifyErrorFxn("A member with this email already exists.");
       setCurrentModal(null);
-      return;
+      return false;
     }
+    return true;
+  };
 
-    // Create new member object
+  const doAdd = async () => {
     const name = `${firstName} ${lastName}`;
     const newMember = {
       user: {
@@ -126,7 +128,6 @@ const AddMemberToOrganizationModal: React.FC<addMemberProps> = ({
       clientAccountType: selectedUser === "Admin User" ? "ADMIN" : "MEMBER",
     };
 
-    // Update state immediately
     addMember(newMember);
     notifySuccessFxn("Team member added successfully!");
     setCurrentModal(null);
@@ -138,23 +139,30 @@ const AddMemberToOrganizationModal: React.FC<addMemberProps> = ({
             lastName,
             email,
             accountType: selectedUser === "Admin User" ? "ADMIN" : "MEMBER",
-            // profile_img: selectedImage,
-            profile_img: selectedImage || null, // Set to null if no image is provided
+            profile_img: selectedImage || null,
             role: selectedRole,
           },
         },
       });
-
       setFirstName("");
       setLastName("");
       setEmail("");
       setSelectedImage("");
       setSelectedRole("");
-
       setCurrentModal(null);
     } catch (error) {
       notifyErrorFxn("Error adding team member.");
       console.error("Error adding team member:", error);
+    }
+  };
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    if (selectedUser === "Admin User") {
+      setBillingConfirm(true);
+    } else {
+      doAdd();
     }
   };
 
@@ -253,7 +261,7 @@ const AddMemberToOrganizationModal: React.FC<addMemberProps> = ({
         <div className="w-full h-fit p-[1.35vw_1.09vw_1.15vw_1.09vw] pt-[1.35vw] px-[1.09vw] pb-[1.15vw]">
           <div className="flex items-center w-full justify-between">
             <h3 className="font-normal font-semibold text-[1.25vw] leading-[1.67vw] text-left text-[#282833]">
-              Add Team Member
+              {billingConfirm ? "Billing Impact" : "Add Team Member"}
             </h3>
             <a
               onClick={handleCloseModal}
@@ -267,6 +275,47 @@ const AddMemberToOrganizationModal: React.FC<addMemberProps> = ({
               />
             </a>
           </div>
+
+          {billingConfirm ? (
+            <div className="flex flex-col w-full mt-[2.08vw] space-y-[1.04vw]">
+              <p className="text-[0.83vw] text-[#6F6F76]">
+                Adding <span className="font-semibold text-[#282833]">{firstName} {lastName}</span> as an Admin User will add 1 billed seat.
+              </p>
+              <div className="w-full border border-[#e0e0e9] rounded-[0.78vw] overflow-hidden">
+                <div className="flex items-center justify-between px-[1.04vw] py-[0.78vw] border-b border-[#e0e0e9] bg-[#f4f4fa]">
+                  <span className="text-[0.78vw] text-[#6F6F76]">Current</span>
+                  <span className="text-[0.83vw] font-medium text-[#282833]">
+                    {currentSeats} seat{currentSeats !== 1 ? "s" : ""} — ${(currentSeats * 99.99).toFixed(2)}/mo
+                  </span>
+                </div>
+                <div className="flex items-center justify-between px-[1.04vw] py-[0.78vw]">
+                  <span className="text-[0.78vw] text-[#6F6F76]">After adding</span>
+                  <span className="text-[0.83vw] font-semibold text-[#50589F]">
+                    {currentSeats + 1} seat{currentSeats + 1 !== 1 ? "s" : ""} — ${((currentSeats + 1) * 99.99).toFixed(2)}/mo
+                  </span>
+                </div>
+              </div>
+              <p className="text-[0.73vw] text-[#98A2B3]">
+                Billing will apply when payments are enabled.
+              </p>
+              <div className="w-full mt-[1.04vw] space-x-[1.04vw] flex items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => setBillingConfirm(false)}
+                  className="flex justify-center items-center p-[0.52vw_1.25vw] text-[#696970] text-[0.94vw] font-normal w-full h-[2.60vw] bg-[#ffffff] border border-solid border-[#e0e0e9] rounded-[0.78vw] grow cursor-pointer outline-none hover:bg-[#f4f4fa] hover:border-[#b8b8cd]"
+                >
+                  Go Back
+                </button>
+                <button
+                  type="button"
+                  onClick={doAdd}
+                  className="flex justify-center items-center p-[0.52vw_1.25vw] w-full h-[2.60vw] bg-[#50589F] text-[#ffffff] text-[0.94vw] font-normal border border-solid border-[#e0e0e9] rounded-[0.78vw] grow cursor-pointer outline-none hover:bg-[#42498B]"
+                >
+                  Confirm & Add
+                </button>
+              </div>
+            </div>
+          ) : (
 
           <form
             className="flex flex-col items-center justify-center w-full mt-[2.19vw] relative"
@@ -516,6 +565,7 @@ const AddMemberToOrganizationModal: React.FC<addMemberProps> = ({
               </button>
             </div>
           </form>
+          )}
         </div>
       </div>
     </section>

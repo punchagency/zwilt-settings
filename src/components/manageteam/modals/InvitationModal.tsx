@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useMutation, useQuery } from "@apollo/client";
-import { GET_INVITED_USERS } from "@/graphql/queries/manageTeam";
+import { GET_INVITED_USERS, GET_ORG_BILLING_PREVIEW } from "@/graphql/queries/manageTeam";
 import { INVITE_USER } from "@/graphql/mutations/manageTeam";
 import { notifyErrorFxn, notifySuccessFxn } from "utils/toast-fxn";
 import Close from "@/assests/icons/close.svg";
@@ -49,6 +49,9 @@ const InvitationModal: React.FC<addTeamProps> = ({
   const [isRotated, setIsRotated] = useState(false);
 
   const { data } = useQuery(GET_INVITED_USERS);
+  const { data: billingData } = useQuery(GET_ORG_BILLING_PREVIEW);
+  const currentSeats: number = billingData?.getOrgBillingPreview?.data?.seats ?? 0;
+  const [billingConfirm, setBillingConfirm] = useState(false);
 
   const selectUserbuttonRef = useRef<HTMLButtonElement>(null);
   const roleButtonRef = useRef<HTMLButtonElement>(null);
@@ -123,7 +126,7 @@ const InvitationModal: React.FC<addTeamProps> = ({
     onError: (error) => {
       notifyErrorFxn(error.message || "Failed to send invitation");
     },
-    refetchQueries: [{ query: GET_INVITED_USERS }],
+    refetchQueries: [{ query: GET_INVITED_USERS }, { query: GET_ORG_BILLING_PREVIEW }],
   });
 
   const toggleAppAccess = (appId: string) => {
@@ -132,26 +135,27 @@ const InvitationModal: React.FC<addTeamProps> = ({
     );
   };
 
-  const handleSendInvite = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
+  const validateInviteForm = (): boolean => {
     if (
       selectedUser === "Select an option" ||
       selectedRole === "Select an option"
     ) {
       notifyErrorFxn("Please select both user type and role");
-      return;
+      return false;
     }
     if (appAccess.length === 0) {
       notifyErrorFxn("Please select at least one app");
-      return;
+      return false;
     }
     if (filteredInvitedUsers.some((user) => user.user.email === email)) {
       notifyErrorFxn("User already invited");
       setCurrentModal(null);
-      return;
+      return false;
     }
+    return true;
+  };
 
+  const doInvite = async () => {
     try {
       await inviteUser({
         variables: {
@@ -165,6 +169,16 @@ const InvitationModal: React.FC<addTeamProps> = ({
       });
     } catch (error) {
       console.error("Error sending invitation:", error);
+    }
+  };
+
+  const handleSendInvite = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!validateInviteForm()) return;
+    if (selectedUser === "Admin User") {
+      setBillingConfirm(true);
+    } else {
+      doInvite();
     }
   };
 
@@ -206,7 +220,7 @@ const InvitationModal: React.FC<addTeamProps> = ({
       >
         <div className="flex items-center w-full justify-between">
           <h3 className="font-semibold text-[1.25vw] leading-[1.67vw] text-[#282833]">
-            Invite User
+            {billingConfirm ? "Billing Impact" : "Invite User"}
           </h3>
           <a
             onClick={handleCloseModal}
@@ -215,6 +229,47 @@ const InvitationModal: React.FC<addTeamProps> = ({
             <Image src={Close} className="w-[0.83vw] h-[0.83vw]" width={16} alt="" />
           </a>
         </div>
+
+        {billingConfirm ? (
+          <div className="flex flex-col w-full mt-[2.08vw] space-y-[1.04vw]">
+            <p className="text-[0.83vw] text-[#6F6F76]">
+              Inviting <span className="font-semibold text-[#282833]">{email}</span> as an Admin User will add 1 billed seat.
+            </p>
+            <div className="w-full border border-[#e0e0e9] rounded-[0.78vw] overflow-hidden">
+              <div className="flex items-center justify-between px-[1.04vw] py-[0.78vw] border-b border-[#e0e0e9] bg-[#f4f4fa]">
+                <span className="text-[0.78vw] text-[#6F6F76]">Current</span>
+                <span className="text-[0.83vw] font-medium text-[#282833]">
+                  {currentSeats} seat{currentSeats !== 1 ? "s" : ""} — ${(currentSeats * 99.99).toFixed(2)}/mo
+                </span>
+              </div>
+              <div className="flex items-center justify-between px-[1.04vw] py-[0.78vw]">
+                <span className="text-[0.78vw] text-[#6F6F76]">After inviting</span>
+                <span className="text-[0.83vw] font-semibold text-[#50589F]">
+                  {currentSeats + 1} seat{currentSeats + 1 !== 1 ? "s" : ""} — ${((currentSeats + 1) * 99.99).toFixed(2)}/mo
+                </span>
+              </div>
+            </div>
+            <p className="text-[0.73vw] text-[#98A2B3]">
+              Billing will apply when payments are enabled.
+            </p>
+            <div className="w-full mt-[1.04vw] space-x-[1.04vw] flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => setBillingConfirm(false)}
+                className="flex justify-center items-center p-[0.52vw_1.25vw] text-[#696970] text-[0.94vw] w-full h-[2.60vw] bg-[#ffffff] border border-[#e0e0e9] rounded-[0.78vw] cursor-pointer outline-none hover:bg-[#f4f4fa]"
+              >
+                Go Back
+              </button>
+              <button
+                type="button"
+                onClick={doInvite}
+                className="flex justify-center items-center p-[0.52vw_1.25vw] w-full h-[2.60vw] bg-[#50589F] text-[#ffffff] text-[0.94vw] border border-[#e0e0e9] rounded-[0.78vw] cursor-pointer outline-none hover:bg-[#42498B]"
+              >
+                Confirm & Invite
+              </button>
+            </div>
+          </div>
+        ) : (
 
         <form
           className="flex flex-col items-center justify-center w-full mt-[1.56vw] relative"
@@ -365,6 +420,7 @@ const InvitationModal: React.FC<addTeamProps> = ({
             </button>
           </div>
         </form>
+        )}
       </div>
     </section>
   );

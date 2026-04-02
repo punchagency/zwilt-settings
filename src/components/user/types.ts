@@ -8,12 +8,15 @@ export interface IUser {
   lastName: string;
   designation: string;
   role: string;
-  projectList: string[];
-  numOfProjects: string;
+  projectList: any[];
+  numOfProjects: number;
   email: string;
   location: string;
   date: string;
   status: string;
+  apps?: string[];
+  rawRole?: string;
+  source?: string;
 }
 
 export interface IAttendanceRow {
@@ -45,6 +48,7 @@ export interface IUserPageData {
   projects: IProject[];
   actionsDropdown: IActionsDropdown[];
   selectedUsers: string[];
+  activeTab: number;
 }
 
 export interface IUserRow {
@@ -59,4 +63,5 @@ export interface IUserRow {
   location: string;
   date: string;
   status: string;
+  source?: string;
 }

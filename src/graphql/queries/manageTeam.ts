@@ -20,6 +20,7 @@ export const GET_ORGANIZATION_MEMBERS = gql`
         appAccess
         isBilledSeat
         seatStatus
+        source
       }
     }
   }
@@ -43,6 +44,7 @@ export const GET_INVITED_USERS = gql`
         appAccess
         isBilledSeat
         seatStatus
+        source
       }
     }
   }
@@ -57,6 +59,12 @@ export const GET_ORG_BILLING_PREVIEW = gql`
         pricePerSeat
         total
         currency
+        services {
+          name
+          seats
+          pricePerSeat
+          total
+        }
       }
     }
   }

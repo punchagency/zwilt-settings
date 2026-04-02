@@ -19,6 +19,7 @@ interface Props {
   userToDelete: User | null;
   setUserToDelete: React.Dispatch<React.SetStateAction<User | null>>;
   handleDeleteMember: () => void;
+  billingSeats?: number;
 }
 interface UserWithCheck extends User {
   isChecked: boolean;
@@ -37,6 +38,7 @@ const ManageAdmin: React.FC<Props> = ({
   userToDelete,
   setUserToDelete,
   handleDeleteMember,
+  billingSeats = 0,
 }) => {
   const { userState } = useUser();
   const [selectedAdminCount, setSelectedAdminCount] = useState(0);
@@ -225,6 +227,7 @@ const ManageAdmin: React.FC<Props> = ({
           userToDelete={userToDelete}
           handleDeleteMember={handleDeleteMember}
           handleCloseModal={handleCloseModal}
+          billingSeats={billingSeats}
         />
       )}
 
@@ -233,6 +236,7 @@ const ManageAdmin: React.FC<Props> = ({
           handleCloseModal={handleCloseModal}
           selectedUserCount={selectedAdminCount}
           onDeleteTeamMember={deleteMultipleAdminsFromOrganization}
+          billingSeats={billingSeats}
         />
       )}
 

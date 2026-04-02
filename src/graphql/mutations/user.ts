@@ -44,6 +44,16 @@ export const INVITE_USER = gql`
   }
 `;
 
+export const UPDATE_SEAT_APP_ACCESS = gql`
+  mutation UpdateSeatAppAccess($clientId: String!, $appAccess: [String!]!) {
+    updateSeatAppAccess(clientId: $clientId, appAccess: $appAccess) {
+      statusCode
+      success
+      message
+    }
+  }
+`;
+
 export const EDIT_USER = gql`
   mutation EditUser($input: EditUserInput) {
     editUser(input: $input)
