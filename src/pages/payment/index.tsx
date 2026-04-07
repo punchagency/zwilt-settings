@@ -11,13 +11,14 @@ import ZwiltIcon from "@/assests/icons/zwiltlogo.svg";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
-import { useQuery } from "@apollo/client";
+import { useQuery, useMutation } from "@apollo/client";
 import useUser from "utils/recoil_store/hooks/use-user-state";
 import { GetAIUsageDashboard } from "@/graphql/queries/aiCredits";
 import SubscriptionTiers from "@/components/ai-credits/SubscriptionTiers";
 import { Skeleton } from "@mui/material";
 import { GET_ORG_BILLING_PREVIEW } from "@/graphql/queries/manageTeam";
 import { get_invoices } from "@/graphql/queries/invoices";
+import { CREATE_BILLING_PORTAL_SESSION } from "@/graphql/mutations/manageTeam";
 
 const customActiveUnderlineStyle: React.CSSProperties = {
   color: "#282833",
@@ -29,7 +30,12 @@ const BillingSummary: React.FC = () => {
   const { query } = router;
   const [activeTab, setActiveTab] = useState("Billing Summary");
   const [expandedProducts, setExpandedProducts] = useState<string[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState("Billing-Period");
+  const [selectedPeriod, setSelectedPeriod] = useState(() => {
+    const d = new Date();
+    const month = d.toLocaleString("en-US", { month: "long" }).toLowerCase();
+    const year = d.getFullYear();
+    return `${month}-${year}`;
+  });
 
   const { getUserState } = useUser();
   const userState = getUserState();
@@ -104,26 +110,43 @@ const BillingSummary: React.FC = () => {
     const data =
       orgBillingData?.getOrgBillingPreview?.data?.services?.map(
         (service: any) => ({
-          product: service.name,
-          amount: `USD $${service.total.toFixed(2)}`,
-          seats: service.seats,
+          "Product/Service": service.name,
+          Seats: service.seats,
+          "Price Per Seat": `USD $${service.pricePerSeat.toFixed(2)}`,
+          "Total Charges": `USD $${service.total.toFixed(2)}`,
         }),
       ) || [];
 
-    const csvRows = [Object.keys(data[0]).join(",")];
+    if (data.length === 0) return;
 
-    for (const row of data) {
-      const values = Object.values(row);
+    const headers = Object.keys(data[0]);
+    const csvRows = [headers.join(",")];
+
+    for (const row of data as any[]) {
+      const values = headers.map((header) => {
+        const val = row[header];
+        // Escape commas in values
+        return typeof val === "string" && val.includes(",") ? `"${val}"` : val;
+      });
       csvRows.push(values.join(","));
     }
 
+    // Add Grand Total
+    const grandTotal =
+      orgBillingData?.getOrgBillingPreview?.data?.total?.toFixed(2) || "0.00";
+    csvRows.push("");
+    csvRows.push(`Grand Total,,,USD $${grandTotal}`);
+
     const csvString = csvRows.join("\n");
-    const blob = new Blob([csvString], { type: "text/csv" });
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.setAttribute("hidden", "");
     a.setAttribute("href", url);
-    a.setAttribute("download", "billing_summary.csv");
+    a.setAttribute(
+      "download",
+      `billing_summary_${new Date().toISOString().split("T")[0]}.csv`,
+    );
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -137,11 +160,34 @@ const BillingSummary: React.FC = () => {
     );
   };
 
-  const periods = [
-    { value: "may-2024", label: "May 1 - May 31, 2024" },
-    { value: "april-2024", label: "April 1 - April 30, 2024" },
-    { value: "march-2024", label: "Mar 1 - March 31, 2024" },
-  ];
+  const periods = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - i);
+    const month = d.toLocaleString("en-US", { month: "long" });
+    const year = d.getFullYear();
+    const lastDay = new Date(year, d.getMonth() + 1, 0).getDate();
+    return {
+      value: `${month.toLowerCase()}-${year}`,
+      label: `${month} 1 - ${month} ${lastDay}, ${year}`,
+    };
+  });
+
+  const [createPortalSession, { loading: portalLoading }] = useMutation(
+    CREATE_BILLING_PORTAL_SESSION,
+  );
+
+  const handleManageBilling = async () => {
+    try {
+      const { data } = await createPortalSession({
+        variables: { returnUrl: window.location.href },
+      });
+      if (data?.createBillingPortalSession) {
+        window.location.href = data.createBillingPortalSession;
+      }
+    } catch (err) {
+      console.error("Failed to create billing portal session:", err);
+    }
+  };
 
   const handleSelect = (selected: string) => {
     setSelectedPeriod(selected);
@@ -244,6 +290,14 @@ const BillingSummary: React.FC = () => {
                 </div>
 
                 <div className="flex items-center  justify-end space-x-[0.78vw]">
+                  <button
+                    className="flex items-center justify-center text-center text-[0.83vw] text-[#6F6F76] p-[0.93vw_0.78vw] hover:border-[#A6A6A6] w-[10.22vw] h-[2.55vw] hover:bg-[#e2e2f1] bg-[#ffffff] border-[0.05vw] border-[#e0e0e9] rounded-[0.78vw] disabled:opacity-50"
+                    onClick={handleManageBilling}
+                    disabled={portalLoading}
+                  >
+                    {portalLoading ? "Loading..." : "Manage Billing"}
+                  </button>
+
                   <button
                     className="flex items-center justify-center text-center text-[0.83vw] text-[#6F6F76] p-[0.93vw_0.78vw] hover:border-[#A6A6A6] w-[9.22vw] h-[2.55vw] hover:bg-[#e2e2f1] bg-[#ffffff] border-[0.05vw] border-[#e0e0e9] rounded-[0.78vw]"
                     onClick={handleDownloadCSV}
@@ -532,28 +586,6 @@ const BillingSummary: React.FC = () => {
                                               USD ${service.total.toFixed(2)}
                                             </td>
                                           </tr>
-                                          {service.coreSeats > 0 && (
-                                            <tr className="text-[0.73vw] text-gray-500 italic">
-                                              <td className="py-[0.4vw] px-[2vw]">
-                                                ↳ Core Database Seats
-                                              </td>
-                                              <td className="text-right py-[0.4vw] px-[1.5vw]">
-                                                {service.coreSeats}
-                                              </td>
-                                              <td colSpan={2}></td>
-                                            </tr>
-                                          )}
-                                          {service.trackerSeats > 0 && (
-                                            <tr className="text-[0.73vw] text-gray-500 italic border-b border-[#F4F4FA]">
-                                              <td className="py-[0.4vw] px-[2vw]">
-                                                ↳ Legacy Tracker Seats
-                                              </td>
-                                              <td className="text-right py-[0.4vw] px-[1.5vw]">
-                                                {service.trackerSeats}
-                                              </td>
-                                              <td colSpan={2}></td>
-                                            </tr>
-                                          )}
                                         </tbody>
                                       </table>
                                     </div>

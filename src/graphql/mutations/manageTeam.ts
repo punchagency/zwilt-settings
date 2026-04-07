@@ -108,3 +108,8 @@ export const REACTIVATE_SEAT = gql`
     }
   }
 `;
+export const CREATE_BILLING_PORTAL_SESSION = gql`
+  mutation CreateBillingPortalSession($returnUrl: String!) {
+    createBillingPortalSession(returnUrl: $returnUrl)
+  }
+`;

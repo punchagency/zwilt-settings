@@ -514,6 +514,17 @@ function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
                   </div>
                   <div
                     style={{
+                      fontSize: "0.75rem",
+                      color: "#667085",
+                      marginBottom: "0.5rem",
+                      marginTop: "-0.25rem",
+                    }}
+                  >
+                    Note: Pricing per seat depends on the role and app access
+                    level.
+                  </div>
+                  <div
+                    style={{
                       display: "flex",
                       flexWrap: "wrap",
                       gap: "0.5rem",
@@ -522,31 +533,102 @@ function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
                       padding: "0.5rem",
                     }}
                   >
-                    {["Tracker", "Sales", "Recruit", "Market"].map((app) => (
-                      <FormControlLabel
-                        key={app}
-                        control={
-                          <Checkbox
-                            size="small"
-                            checked={values.appAccess?.includes(
-                              app.toLowerCase(),
-                            )}
-                            onChange={() => {
-                              const currentApps = values.appAccess || [];
-                              const appName = app.toLowerCase();
-                              const newApps = currentApps.includes(appName)
-                                ? currentApps.filter((a) => a !== appName)
-                                : [...currentApps, appName];
-                              setFieldValue("appAccess", newApps);
-                            }}
+                    {["Tracker", "Sales", "Recruit", "Market"].map((app) => {
+                      const isPremiumRole =
+                        values.assignedRole === "ORGANIZATION_OWNER" ||
+                        values.assignedRole === "ORGANIZATION_MANAGER";
+                      const price = isPremiumRole ? 99.99 : 9.0;
+                      const isSelected = values.appAccess?.includes(
+                        app.toLowerCase(),
+                      );
+
+                      return (
+                        <div
+                          key={app}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            width: "100%",
+                            padding: "4px 8px",
+                            borderRadius: "6px",
+                            background: isSelected ? "#F9FAFB" : "transparent",
+                          }}
+                        >
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                size="small"
+                                checked={isSelected}
+                                onChange={() => {
+                                  const currentApps = values.appAccess || [];
+                                  const appName = app.toLowerCase();
+                                  const newApps = currentApps.includes(appName)
+                                    ? currentApps.filter((a) => a !== appName)
+                                    : [...currentApps, appName];
+                                  setFieldValue("appAccess", newApps);
+                                }}
+                              />
+                            }
+                            label={
+                              <span style={{ fontSize: "0.875rem" }}>
+                                {app}
+                              </span>
+                            }
                           />
-                        }
-                        label={
-                          <span style={{ fontSize: "0.875rem" }}>{app}</span>
-                        }
-                      />
-                    ))}
+                          <span
+                            style={{
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              color: isSelected ? "#101828" : "#98A2B3",
+                            }}
+                          >
+                            ${price.toFixed(2)}/mo
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
+                  {values.appAccess && values.appAccess.length > 0 && (
+                    <div
+                      style={{
+                        marginTop: "0.75rem",
+                        padding: "0.75rem",
+                        background: "#F5F8FF",
+                        borderRadius: "8px",
+                        border: "1px solid #D1E0FF",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "0.875rem",
+                          fontWeight: 500,
+                          color: "#344054",
+                        }}
+                      >
+                        Total Monthly Cost:
+                      </span>
+                      <span
+                        style={{
+                          fontSize: "1rem",
+                          fontWeight: 700,
+                          color: "#244BB6",
+                        }}
+                      >
+                        $
+                        {(
+                          values.appAccess.length *
+                          (values.assignedRole === "ORGANIZATION_OWNER" ||
+                          values.assignedRole === "ORGANIZATION_MANAGER"
+                            ? 99.99
+                            : 9.0)
+                        ).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </FormWrapper>
 
