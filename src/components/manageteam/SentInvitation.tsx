@@ -32,16 +32,13 @@ const SentInvitation: React.FC<SentInvitationProps> = ({
   filteredInvitedUsers,
   setFilteredInvitedUsers,
 }) => {
-  const { loading, error } = useQuery(GET_INVITED_USERS, {
-    context: { clientName: "tracker" },
-  });
+  const { loading, error } = useQuery(GET_INVITED_USERS);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const capitalizeEveryWord = (str: string) => {
     return str?.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
   const [cancelInvitation] = useMutation(CANCEL_INVITATION, {
-    context: { clientName: "tracker" },
     onCompleted: () => {
       notifySuccessFxn("Invitation cancelled successfully");
     },

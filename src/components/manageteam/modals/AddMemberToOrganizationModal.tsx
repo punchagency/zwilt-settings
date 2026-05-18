@@ -39,9 +39,7 @@ const AddMemberToOrganizationModal: React.FC<addMemberProps> = ({
   );
   const [imageError, setImageError] = useState<string | null>(null);
 
-  const { data, loading, error } = useQuery(GET_ORGANIZATION_MEMBERS, {
-    context: { clientName: "tracker" },
-  });
+  const { data, loading, error } = useQuery(GET_ORGANIZATION_MEMBERS);
 
   const { data: billingData } = useQuery(GET_ORG_BILLING_PREVIEW);
   const currentSeats: number = billingData?.getOrgBillingPreview?.data?.seats ?? 0;
@@ -84,7 +82,6 @@ const AddMemberToOrganizationModal: React.FC<addMemberProps> = ({
   };
 
   const [addMemberToOrganization] = useMutation(ADD_MEMBER_TO_ORGANIZATION, {
-    context: { clientName: "tracker" },
     refetchQueries: [{ query: GET_ORG_BILLING_PREVIEW }],
     onCompleted: (data) => {
       try {

@@ -5,6 +5,7 @@ import {
   InMemoryCache,
   ApolloLink,
 } from "@apollo/client";
+import { setContext } from "@apollo/client/link/context";
 import merge from "deepmerge";
 import isEqual from "lodash-es/isEqual";
 // import { NormalizedCacheObject } from "@apollo/react-hooks";
@@ -38,6 +39,29 @@ const aiCreditsUrl =
   (isLocal ? defaultLocalUrl : "https://api.zwilt.com/graphql");
 
 function createApolloClient(headers?: any) {
+  const authLink = setContext((_, { headers: existingHeaders }) => {
+    const session =
+      typeof window !== "undefined"
+        ? JSON.parse(localStorage.getItem("zw_us") || "{}")
+        : {};
+    const token = session.token;
+
+    if (typeof window !== "undefined" && token) {
+      console.log("[Apollo AuthLink] Token found, sending as session token");
+      console.log("[Apollo AuthLink] Token length:", token.length);
+      console.log("[Apollo AuthLink] Token first 50 chars:", token.substring(0, 50));
+    } else if (typeof window !== "undefined") {
+      console.log("[Apollo AuthLink] No token found in localStorage");
+    }
+
+    return {
+      headers: {
+        ...existingHeaders,
+        ...(token && { "x-auth-token": token }),
+      },
+    };
+  });
+
   const httpLink = new HttpLink({
     uri: isLocal ? defaultLocalUrl : `${apiUrl}/graphql`,
     fetch,
@@ -65,7 +89,7 @@ function createApolloClient(headers?: any) {
     ApolloLink.split(
       (operation: any) => operation.getContext().clientName === "tracker",
       trackerLink,
-      httpLink,
+      authLink.concat(httpLink),
     ),
   );
 

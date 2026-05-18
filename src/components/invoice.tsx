@@ -28,10 +28,10 @@ const formatDate = (dateStr: string) =>
 
 const mapRawInvoice = (inv: any): Invoice => ({
   id: inv._id,
-  date: formatDate(inv.createdAt),
+  date: formatDate(inv.billingDate),
   status: inv.status,
   amount: `USD $${(inv.amount / 100).toFixed(2)}`,
-  card: inv.paymentIntentId ? `PI-${inv.paymentIntentId.slice(-4)}` : "N/A",
+  card: inv.stripeInvoiceId ? `INV-${inv.stripeInvoiceId.slice(-4)}` : "N/A",
 });
 
 const Invoices: React.FC<InvoicesProps> = ({ rawInvoices, loading }) => {

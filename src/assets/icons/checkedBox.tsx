@@ -13,9 +13,9 @@ const CheckedBox = () => {
       <path
         d="M14.6654 6.5L8.2487 12.9167L5.33203 10"
         stroke="#50589F"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <rect x="0.5" y="0.5" width="19" height="19" rx="5.5" stroke="#50589F" />
     </svg>

@@ -89,3 +89,18 @@ export const CHANGE_PASSWORD = gql`
     changePassword(input: $input)
   }
 `;
+
+export const CREATE_ACCOUNT = gql`
+  mutation CreateAccount($input: UserDataInput!) {
+    createAccount(input: $input) {
+      success
+      message
+      data {
+        _id
+        email
+        firstName
+        lastName
+      }
+    }
+  }
+`;

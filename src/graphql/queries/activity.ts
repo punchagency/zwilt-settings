@@ -16,19 +16,14 @@ export const GET_USERS_BY_ACCESS = gql`
         _id
         name
         email
-        title
         firstName
         lastName
         profileImg
         inviteToken
         passwordResetToken
-        allowTimeTrackingOnAllUserProjects
-        role
+        systemRole
+        organizationRole
         status
-        location
-        projects {
-          _id
-        }
         acceptedInvite
         createdAt
         attachedOrganization {
@@ -327,6 +322,7 @@ export const GET_TIME_ADDITIONS = gql`
           firstName
           lastName
           name
+          profileImg
         }
         status
       }

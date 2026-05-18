@@ -15,9 +15,7 @@ const ChatBox = ({ unreadCount, style }: any) => {
     <ChatBoxWrapper
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      // @ts-ignore
-      hovered={isHovered}
-      active={isActive} // Pass the active state here
+      $active={isActive}
       sx={{
         cursor: "pointer",
         ...style,
@@ -50,7 +48,9 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
   },
 }));
 
-const ChatBoxWrapper = styled(Box)(({ theme, hovered, active }: any) => ({
+const ChatBoxWrapper = styled(Box, {
+  shouldForwardProp: (prop) => prop !== "$active",
+})(({ theme, $active }: any) => ({
   position: "relative",
   padding: calculatePxToPercentage(16),
   cursor: "pointer",
@@ -61,9 +61,9 @@ const ChatBoxWrapper = styled(Box)(({ theme, hovered, active }: any) => ({
   justifyContent: "center",
   transition: "all 0.5s ease",
   borderRadius: calculatePxToPercentage(20),
-  backgroundColor: active ? "#f4f4fa" : "#FFF", // Conditionally set background color
+  backgroundColor: $active ? "#f4f4fa" : "#FFF",
   zIndex: 1,
-  border: active ? "1px solid #B8B8CD" : ".5px solid #E0E0E9", // Conditionally set border color
+  border: $active ? "1px solid #B8B8CD" : ".5px solid #E0E0E9",
   "&::after": {
     content: '""',
     position: "absolute",

@@ -41,7 +41,9 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
   },
 }));
 
-const MenuBoxWrapper = styled(Box)(({ theme, hovered, active }: any) => ({
+const MenuBoxWrapper = styled(Box, {
+  shouldForwardProp: (prop) => prop !== "hovered" && prop !== "active",
+})(({ theme, hovered, active }: any) => ({
   position: "relative",
   padding: calculatePxToPercentage(16),
   cursor: "pointer",

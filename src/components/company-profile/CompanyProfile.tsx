@@ -25,7 +25,7 @@ import Play from "@/assests/icons/play-icon.svg";
 import DeleteSocialMediaLink from "@/components/company/delete-social-media";
 import { awsUpload } from "@/aws/awsUpload";
 import { useLinksState } from "../../../utils/recoil_store/hooks/use-link-state";
-import { TempGetUser } from "@/graphql/queries/user";
+// import { TempGetUser } from "@/graphql/queries/user";
 import useUser from "utils/recoil_store/hooks/use-user-state";
 import { notifyErrorFxn, notifySuccessFxn } from "../../../utils/toast-fxn";
 import { ToastContainer } from "react-toastify";
@@ -159,20 +159,47 @@ const Company = (props: Props) => {
   //   },
   // });
 
-  const { refetch } = useQuery(TempGetUser, {
-    onCompleted: (data) => {
-      const organization = userState?.organization;
+  const fetchCurrentUser = async () => {
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("zw_us") : null;
+      const parsedToken = token ? JSON.parse(token) : null;
+      const baseUrl = process.env.NEXT_PUBLIC_APP_SERVER || "http://localhost:5005";
 
-      setCompanyData(organization);
-      setSelectedIndustry(organization?.industry || "");
+      const response = await fetch(`${baseUrl}/api/v1/identity/me`, {
+        headers: {
+          ...(parsedToken?.token && { "x-auth-token": parsedToken.token }),
+        },
+      });
 
-      // Batch the logo and video state updates to avoid extra renders
-      React.startTransition(() => {
+      const responseData = await response.json();
+      if (responseData.success) {
+        const { user, organization } = responseData.data;
+        
+        // Update local state
+        setCompanyData(organization);
+        setSelectedIndustry(organization?.industry || "");
         setCompanyLogo(organization?.logo);
         setIntroVideo(organization?.introVideo);
-      });
-    },
-  });
+
+        // Update Recoil state
+        updateUser({
+          currentUser: {
+            ...userProp?.currentUser,
+            user,
+            organization,
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching current user:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  const refetch = () => fetchCurrentUser();
 
   const [companyLogo, setCompanyLogo] = useState(userState?.organization?.logo);
   const [introVideo, setIntroVideo] = useState(

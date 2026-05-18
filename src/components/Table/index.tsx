@@ -1,7 +1,7 @@
 import CheckedBox from "@/assets/icons/checkedBox";
 import UncheckedBox from "@/assets/icons/unCheckedBox";
 import { Checkbox, styled } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { Fragment, useEffect, useState } from "react";
 
 interface Column {
   id: string;
@@ -17,7 +17,7 @@ interface CustomTableProps {
   nestedTableTitle?: string;
   paginationName?: string;
   noCheckbox?: boolean;
-  onClick?: () => any;
+  onClick?: (row: any) => any;
   onSelect?: (e: Array<any>) => void;
   selectedRows?: Array<string>;
 }
@@ -126,7 +126,8 @@ const CustomTable: React.FC<CustomTableProps> = ({
     setPageInfo({ firstItemIndex: 0, lastItemIndex: limit - 1 });
     setPage(0);
     setDataShown(data?.slice(start, end));
-  }, [limit]);
+  }, [limit, data]);
+
   const [pageInfo, setPageInfo] = useState<PageInfoT>({
     firstItemIndex: 0,
     lastItemIndex: 4,
@@ -134,7 +135,7 @@ const CustomTable: React.FC<CustomTableProps> = ({
 
   useEffect(() => {
     setPageInfo(calculateItemIndices(data?.length, limit, page + 1));
-  }, [page]);
+  }, [page, data?.length, limit]);
 
   const getCellSize = () => {
     const columnsWithWidth = columns.filter(
@@ -184,7 +185,7 @@ const CustomTable: React.FC<CustomTableProps> = ({
 
   useEffect(() => {
     onSelect && onSelect(selected);
-  }, [selected]);
+  }, [selected, onSelect]);
 
   useEffect(() => {
     if (
@@ -197,7 +198,7 @@ const CustomTable: React.FC<CustomTableProps> = ({
     ) {
       setSelected(selectedRows || []);
     }
-  }, [selectedRows]);
+  }, [selectedRows, selected]);
   return (
     <CustomTableWrapper>
       <CustomTableHead>
@@ -228,11 +229,11 @@ const CustomTable: React.FC<CustomTableProps> = ({
       </CustomTableHead>
       <CustomTableBody>
         {data?.map((row) => (
-          <>
+          <Fragment key={row.id}>
             <CustomTableRow
               onClick={() => {
                 if (onClick) {
-                  return onClick();
+                  return onClick(row);
                 } else {
                   if (showRow === row.id) {
                     return setShowRow("");
@@ -240,14 +241,8 @@ const CustomTable: React.FC<CustomTableProps> = ({
                   return setShowRow(row.id);
                 }
               }}
-              // onClick={() => {
-              //   if (showRow === row.id){
-              //      return setShowRow("");}
-              //   return setShowRow(row.id);
-              // }}
               nested={!!row.nestedTable}
               clickable={onClick !== undefined}
-              key={row.id}
             >
               {noCheckbox ? (
                 ""
@@ -317,7 +312,7 @@ const CustomTable: React.FC<CustomTableProps> = ({
                 </CustomTableBody>
               </NestedTableWrapper>
             )}
-          </>
+          </Fragment>
         ))}
       </CustomTableBody>
     </CustomTableWrapper>

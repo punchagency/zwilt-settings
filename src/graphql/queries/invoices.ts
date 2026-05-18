@@ -1,15 +1,24 @@
 import { gql } from "@apollo/client";
 
 export const get_invoices = gql`
-  query GetInvoices($clientId: String) {
-    getInvoices(clientId: $clientId) {
+  query GetOrganizationInvoices($page: Float, $limit: Float) {
+    getOrganizationInvoices(page: $page, limit: $limit) {
+      success
+      message
       data {
-        _id
-        paymentIntentId
-        duration
-        amount
-        status
-        createdAt
+        invoices {
+          _id
+          stripeInvoiceId
+          amount
+          status
+          billingDate
+          hostedInvoiceUrl
+          invoicePdf
+          type
+          description
+        }
+        total
+        pages
       }
     }
   }

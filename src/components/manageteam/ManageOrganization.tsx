@@ -26,9 +26,7 @@ const ManageOrganization: React.FC<Props> = ({
   >(null);
 
   const { setMembers } = useOrganizationMembers();
-  const { data, loading, error, refetch } = useQuery(GET_ORGANIZATION_MEMBERS, {
-    context: { clientName: "tracker" },
-  });
+  const { data, loading, error, refetch } = useQuery(GET_ORGANIZATION_MEMBERS);
 
   const { data: billingData } = useQuery(GET_ORG_BILLING_PREVIEW);
   const billingSeats: number = billingData?.getOrgBillingPreview?.data?.seats ?? 0;
@@ -36,7 +34,6 @@ const ManageOrganization: React.FC<Props> = ({
   const [deleteMembersFromOrganization] = useMutation(
     DELETE_MEMBER_FROM_ORGANIZATION,
     {
-      context: { clientName: "tracker" },
       refetchQueries: [{ query: GET_ORG_BILLING_PREVIEW }],
       onCompleted: () => {
         setUserToDelete(null);

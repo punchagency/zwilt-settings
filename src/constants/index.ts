@@ -8,7 +8,7 @@ const isLocal = isLocalEnv || isLocalHost;
 
 export function getAuthUrl() {
   if (isLocal) {
-    return "http://localhost:3003/auth/login";
+    return "http://localhost:3001/auth/signin?v=account&r=settings";
   } else {
     return "https://app.zwilt.com/auth/signin?v=account&r=tracker";
   }
@@ -16,7 +16,7 @@ export function getAuthUrl() {
 
 export function getRedirectUrl() {
   if (isLocal) {
-    return "http://localhost:3000/dashboard";
+    return "http://localhost:3003/dashboard";
   } else {
     return "https://tracker.zwilt.com/dashboard";
   }

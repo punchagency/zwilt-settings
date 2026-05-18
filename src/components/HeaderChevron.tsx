@@ -18,9 +18,9 @@ export default function HeaderChevron({ rotated }: Props) {
       <path
         d="M1 1L9 9L17 1"
         stroke="#282833"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

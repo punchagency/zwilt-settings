@@ -1,12 +1,12 @@
 import { gql } from "@apollo/client";
 
 export const GET_CARDS = gql`
-  query GetClientPaymentMethods {
-    getClientPaymentMethods {
+  query GetOrganizationPaymentMethods {
+    getOrganizationPaymentMethods {
       success
       message
       data {
-        paymentMethods {
+        methods {
           id
           billing_details {
             name
@@ -19,7 +19,7 @@ export const GET_CARDS = gql`
           }
           created
         }
-        defaultPaymentMethod
+        defaultMethodId
       }
     }
   }

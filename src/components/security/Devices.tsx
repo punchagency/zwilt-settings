@@ -16,6 +16,7 @@ import { useMutation, useLazyQuery, useQuery } from "@apollo/client";
 import { useEffect, useState } from "react";
 import { calculatePxToPercentage } from "@/../utils/cssHelper";
 import axios from "axios";
+import axiosInstance from "@/config/axiosConfig";
 import useUser from "utils/recoil_store/hooks/use-user-state";
 import { BootstrapTooltip } from "@/assests/Tooltip";
 import { notifyErrorFxn, notifySuccessFxn } from "../../../utils/toast-fxn";
@@ -43,7 +44,8 @@ interface Device {
 async function fetchUserIpAndLocation(): Promise<IpAndLocation> {
   try {
     const response = await axios.get(
-      "https://ipinfo.io/json?token=fb7087013ded88"
+      "https://ipinfo.io/json?token=fb7087013ded88",
+      { withCredentials: false }
     );
     const { ip, city, country } = response.data;
     return {
@@ -74,14 +76,13 @@ const Devices = () => {
   const userState = userProp?.currentUser;
   
 
-  const [removeDevice, { loading: removeLoading, error: removeError }] =useMutation(REMOVE_DEVICE, {
+  const [removeDevice, { loading: removeLoading, error: removeError }] = useMutation(REMOVE_DEVICE, {
     onCompleted: () => {
       notifySuccessFxn("Successfull deleted");
       refetch()
     },
     onError: (error) => {
       notifyErrorFxn("Error removing device:" + error.message);
-
     }
   });
 
@@ -185,7 +186,7 @@ const Devices = () => {
       for (const ip of ipAddresses) {
         console.log(ip)
         try {
-          const response = await axios.get(`https://ipinfo.io/${ip}/json`);
+          const response = await axios.get(`https://ipinfo.io/${ip}/json`, { withCredentials: false });
           const { country } = response.data;
           const flagUrl = `https://countryflagsapi.com/png/${country}`;
           flagUrls[ip] = flagUrl;

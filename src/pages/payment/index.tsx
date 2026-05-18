@@ -64,7 +64,7 @@ const BillingSummary: React.FC = () => {
   const { data: invoicesData, loading: invoicesLoading } = useQuery(
     get_invoices,
     {
-      variables: { clientId: organizationId },
+      variables: { limit: 10, page: 1 },
       skip: !organizationId,
       fetchPolicy: "network-only",
     },
@@ -352,14 +352,14 @@ const BillingSummary: React.FC = () => {
                           </td>
                         </tr>
                       ) : (
-                        invoicesData?.getInvoices?.data?.map((invoice: any) => (
+                        invoicesData?.getOrganizationInvoices?.data?.invoices?.map((invoice: any) => (
                           <tr
                             key={invoice._id}
                             className="w-full border-b border-[#E0E0E9]"
                           >
                             <td className="text-start py-[1.04vw]">
                               <span className="text-[0.83vw] font-medium text-left text-[#6F6F76]">
-                                {new Date(invoice.createdAt).toLocaleDateString(
+                                {new Date(invoice.billingDate).toLocaleDateString(
                                   "en-US",
                                   {
                                     month: "long",
@@ -369,23 +369,11 @@ const BillingSummary: React.FC = () => {
                                 )}
                               </span>
                             </td>
-
-                            <td className="flex items-center justify-end py-[1.04vw]">
-                              <span
-                                className={`cursor-pointer text-[0.83vw] flex items-center justify-center w-[4.69vw] h-[1.56vw] border rounded-[2.6vw] p-[0.78vw] ml-[5vw] -mr-[0.02vw] ${
-                                  invoice.status?.toLowerCase() === "paid"
-                                    ? "text-[#17B26A] border-[#abefc6] bg-[#dcfae6]"
-                                    : "text-[#98A2B3] border-[#d0d5dd] bg-[#f2f4f7]"
-                                }`}
-                              >
-                                {invoice.status}
-                              </span>
-                            </td>
-
+...
                             <td className="text-right py-[1.04vw]">
                               <span className="text-[0.83vw] font-medium text-very-dark-grayish-blue">
-                                {invoice.paymentIntentId
-                                  ? `PI-${invoice.paymentIntentId.slice(-4)}`
+                                {invoice.stripeInvoiceId
+                                  ? `INV-${invoice.stripeInvoiceId.slice(-4)}`
                                   : "N/A"}
                               </span>
                             </td>
@@ -607,7 +595,7 @@ const BillingSummary: React.FC = () => {
         {activeTab === "Payment Methods" && <PaymentMethods />}
         {activeTab === "Invoices" && (
           <Invoices
-            rawInvoices={invoicesData?.getInvoices?.data}
+            rawInvoices={invoicesData?.getOrganizationInvoices?.data?.invoices}
             loading={invoicesLoading}
           />
         )}

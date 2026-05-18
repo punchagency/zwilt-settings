@@ -1,9 +1,13 @@
 import { GetServerSideProps } from "next";
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
+  // Preserve query parameters (especially token) when redirecting
+  const queryString = new URLSearchParams(context.query as Record<string, string>).toString();
+  const destination = queryString ? `/dashboard?${queryString}` : "/dashboard";
+
   return {
     redirect: {
-      destination: "/user",
+      destination,
       permanent: false,
     },
   };

@@ -7,26 +7,6 @@ export const TempGetUser = gql`
       data {
         client {
           _id
-          user {
-            _id
-            punchId
-            email
-            name
-            firstName
-            lastName
-            phone
-            profile_img
-            isTwoFactorEnabled
-            isAuthenticatorEnabled
-            isPhoneTwoFactorEnabled
-            signedInDevices {
-              browser
-              device
-              location
-              signInDate
-              sessionToken
-            }
-          }
           organization {
             _id
             name
@@ -43,6 +23,32 @@ export const TempGetUser = gql`
           role
           clientAccountType
         }
+        talent {
+          _id
+        }
+        user {
+          _id
+          punchId
+          email
+          name
+          firstName
+          lastName
+          phone
+          profile_img
+          isTwoFactorEnabled
+          isAuthenticatorEnabled
+          isPhoneTwoFactorEnabled
+          signedInDevices {
+            browser
+            device
+            location
+            signInDate
+            sessionToken
+          }
+          accountType
+          isClient
+          isTalentProfile
+        }
       }
     }
   }
@@ -55,25 +61,15 @@ export const GET_USERS = gql`
       message
       data {
         _id
-        title
         name
         firstName
         lastName
         email
         profileImg
-        inviteToken
-        allowTimeTrackingOnAllUserProjects
-        role
-        projects {
-          _id
-          projectName
-        }
-        acceptedInvite
-        createdAt
+        systemRole
+        organizationRole
         status
-        location
-        isBilledSeat
-        zwiltAppAccess
+        createdAt
       }
     }
   }
@@ -91,15 +87,8 @@ export const GET_PROJECTS = gql`
           name
           email
           profileImg
-          inviteToken
-          passwordResetToken
-          allowTimeTrackingOnAllUserProjects
-          role
-          projects {
-            _id
-          }
-          acceptedInvite
-          createdAt
+          firstName
+          lastName
           status
         }
         managers {
@@ -107,15 +96,8 @@ export const GET_PROJECTS = gql`
           name
           email
           profileImg
-          inviteToken
-          passwordResetToken
-          allowTimeTrackingOnAllUserProjects
-          role
-          projects {
-            _id
-          }
-          acceptedInvite
-          createdAt
+          firstName
+          lastName
         }
       }
     }

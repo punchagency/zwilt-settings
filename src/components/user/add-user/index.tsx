@@ -89,7 +89,6 @@ const AddUserForms = () => {
         ];
 
   const [inviteUser, { data, loading, error }] = useMutation(INVITE_USER, {
-    context: { clientName: "tracker" },
     onCompleted: (data) => {
       if (data?.inviteUsers) {
         notifySuccessFxn("Invite sent successfully");
@@ -101,7 +100,6 @@ const AddUserForms = () => {
   });
 
   const [fetchUser] = useLazyQuery<any>(GET_USER_BY_ID, {
-    context: { clientName: "tracker" },
     onCompleted: (data) => {
       let name = data.getUserById.data?.name ? data.getUserById.data.name : "";
       let userDataObj = {
@@ -122,7 +120,6 @@ const AddUserForms = () => {
 
   const [updateUser, { data: editUserData, loading: loadingUpdateUser }] =
     useMutation(UPDATE_USER, {
-      context: { clientName: "tracker" },
       onCompleted: (data) => {
         if (data.editUser) {
           notifySuccessFxn("Profile updated successfully!");

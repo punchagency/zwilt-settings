@@ -532,11 +532,11 @@ const PaymentForm: React.FC = () => {
     CREATE_SETUP_INTENT,
     {
       onCompleted: (data) => {
-        if (data?.createSetupIntent?.success) {
-          setClientSecret(data.createSetupIntent.data.clientSecret);
+        if (data?.createOrganizationSetupIntent?.success) {
+          setClientSecret(data.createOrganizationSetupIntent.data.clientSecret);
         } else {
           setError(
-            data?.createSetupIntent?.message || "Failed to create setup intent"
+            data?.createOrganizationSetupIntent?.message || "Failed to create setup intent"
           );
         }
       },
@@ -551,12 +551,12 @@ const PaymentForm: React.FC = () => {
     SET_DEFAULT_CARD,
     {
       onCompleted: (data) => {
-        if (data?.setDefaultCard?.success) {
+        if (data?.setOrganizationDefaultPaymentMethod?.success) {
           refetch();
           notifySuccess("Default payment method updated");
         } else {
           setError(
-            data?.setDefaultCard?.message ||
+            data?.setOrganizationDefaultPaymentMethod?.message ||
               "Failed to set default payment method"
           );
         }
@@ -572,14 +572,14 @@ const PaymentForm: React.FC = () => {
     REMOVE_PAYMENT_METHOD,
     {
       onCompleted: (data) => {
-        if (data?.removeClientPaymentMethods?.success) {
+        if (data?.removeOrganizationPaymentMethod?.success) {
           refetch();
           notifySuccess("Payment method removed successfully");
           setShowConfirm(false);
           setCardToDeleteIndex(null);
         } else {
           setError(
-            data?.removeClientPaymentMethods?.message ||
+            data?.removeOrganizationPaymentMethod?.message ||
               "Failed to remove payment method"
           );
           setShowConfirm(false);
@@ -597,11 +597,11 @@ const PaymentForm: React.FC = () => {
   const [cards, setCards] = useState<Card[]>([]);
 
   useEffect(() => {
-    if (cardsData?.getClientPaymentMethods?.data?.paymentMethods) {
-      const { paymentMethods, defaultPaymentMethod } =
-        cardsData.getClientPaymentMethods.data;
+    if (cardsData?.getOrganizationPaymentMethods?.data?.methods) {
+      const { methods, defaultMethodId } =
+        cardsData.getOrganizationPaymentMethods.data;
 
-      const transformedCards = paymentMethods.map((method: any) => {
+      const transformedCards = methods.map((method: any) => {
         // Convert brand to lowercase and get matching image
         const cardType = method.card.brand.toLowerCase();
         let cardTypeForUrl = cardType;
@@ -624,7 +624,7 @@ const PaymentForm: React.FC = () => {
           expiry,
           name: method.billing_details.name || "Card Owner",
           created: method.created,
-          isDefault: method.id === defaultPaymentMethod,
+          isDefault: method.id === defaultMethodId,
           url: cardLogos[cardTypeForUrl] || cardLogos.Unknown,
           showOptions: false,
         };
@@ -658,7 +658,7 @@ const PaymentForm: React.FC = () => {
     createSetupIntent()
       .then((result) => {
         const clientSecret =
-          result?.data?.createSetupIntent?.data?.clientSecret;
+          result?.data?.createOrganizationSetupIntent?.data?.clientSecret;
         if (clientSecret) {
           console.log("Setup intent created successfully");
           setClientSecret(clientSecret);
@@ -666,14 +666,14 @@ const PaymentForm: React.FC = () => {
         } else {
           console.error(
             "Failed to create setup intent:",
-            result?.data?.createSetupIntent?.message
+            result?.data?.createOrganizationSetupIntent?.message
           );
           notifyError(
-            result?.data?.createSetupIntent?.message ||
+            result?.data?.createOrganizationSetupIntent?.message ||
               "Failed to create setup intent"
           );
           setError(
-            result?.data?.createSetupIntent?.message ||
+            result?.data?.createOrganizationSetupIntent?.message ||
               "Failed to create setup intent"
           );
         }
@@ -780,7 +780,7 @@ const PaymentForm: React.FC = () => {
   const hasStripeRefError =
     cardsError && cardsError.message.includes("User stripe ref not found");
   const shouldShowEmptyState =
-    !cardsData?.getClientPaymentMethods?.data?.paymentMethods?.length ||
+    !cardsData?.getOrganizationPaymentMethods?.data?.methods?.length ||
     hasStripeRefError;
 
   if (cardsLoading) {

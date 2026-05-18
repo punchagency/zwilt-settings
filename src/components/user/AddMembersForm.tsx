@@ -5,6 +5,8 @@ import React, {
   useRef,
   useState,
 } from "react";
+import axios from "@/config/axiosConfig";
+import { apiUrl } from "@/config/apiUrl";
 import Modal from "../modal";
 import { styled } from "@mui/material";
 import { awsUpload } from "@/utils/uploadMedaia";
@@ -77,9 +79,31 @@ interface AddMembersFormProps {
   open: boolean;
   onComplete?: () => void;
   onClose?: () => void;
+  existingUsage?: Record<string, number>;
 }
 
-function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
+interface AppPricing {
+  _id: string;
+  appId: string;
+  name: string;
+  isActive: boolean;
+  maxSeats?: number;
+}
+
+interface PricingData {
+  pricing: {
+    ownerAndManager: number;
+    member: number;
+  };
+  apps: AppPricing[];
+}
+
+function AddMembersForm({
+  open,
+  onComplete,
+  onClose,
+  existingUsage = {},
+}: AddMembersFormProps) {
   const [user, setUser] = useRecoilState(userAtom);
   const [openConfirmModal, setOpenConfirmModal] = React.useState(false);
   const [imageError, setImageError] = useState(false);
@@ -89,6 +113,24 @@ function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
   const [editInitialState, setEditInitialState] = useState<IInitialValues>();
   const [userData, setUserData] = useState<any>(null);
   const { locationOptions, loading: locationsLoading } = useLocationOptions();
+  const [pricingData, setPricingData] = useState<PricingData | null>(null);
+  const [pricingLoading, setPricingLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        const response = await axios.get(`${apiUrl}/api/admin/pricing`);
+        if (response.data.success) {
+          setPricingData(response.data.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch pricing:", err);
+      } finally {
+        setPricingLoading(false);
+      }
+    };
+    fetchPricing();
+  }, []);
 
   const [inviteUser, { data, loading, error }] = useMutation(INVITE_USER, {
     onCompleted: (data) => {
@@ -114,7 +156,6 @@ function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
   });
 
   const [fetchUser] = useLazyQuery<any>(GET_USER_BY_ID, {
-    context: { clientName: "tracker" },
     onCompleted: (data) => {
       let name = data.getUserById.data?.name ? data.getUserById.data.name : "";
       let userDataObj = {
@@ -231,6 +272,28 @@ function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
               undefined,
           })}
           onSubmit={async (values) => {
+            const overLimitApps = values.appAccess.filter((appId) => {
+              const app = pricingData?.apps?.find((a) => a.appId === appId);
+              if (!app || !app.maxSeats) return false;
+              const usage = existingUsage[appId] || 0;
+              // Check if we are adding a seat that exceeds max
+              const isAlreadyAssigned =
+                isEdit && userData?.apps?.includes(appId);
+              return !isAlreadyAssigned && usage + 1 > app.maxSeats;
+            });
+
+            if (overLimitApps.length > 0) {
+              const appNames = overLimitApps
+                .map(
+                  (id) => pricingData?.apps?.find((a) => a.appId === id)?.name,
+                )
+                .join(", ");
+              notifyErrorFxn(
+                `Seat limit reached for: ${appNames}. Please upgrade your plan or remove members.`,
+              );
+              return;
+            }
+
             try {
               if (isEdit) {
                 if (profileImage) delete values.profileImage;
@@ -533,102 +596,139 @@ function AddMembersForm({ open, onComplete, onClose }: AddMembersFormProps) {
                       padding: "0.5rem",
                     }}
                   >
-                    {["Tracker", "Sales", "Recruit", "Market"].map((app) => {
-                      const isPremiumRole =
-                        values.assignedRole === "ORGANIZATION_OWNER" ||
-                        values.assignedRole === "ORGANIZATION_MANAGER";
-                      const price = isPremiumRole ? 99.99 : 9.0;
-                      const isSelected = values.appAccess?.includes(
-                        app.toLowerCase(),
-                      );
+                    {pricingLoading ? (
+                      <div style={{ padding: "10px", fontSize: "0.75rem" }}>
+                        Loading application registry...
+                      </div>
+                    ) : (
+                      pricingData?.apps?.map((app) => {
+                        const isPremiumRole =
+                          values.assignedRole === "ORGANIZATION_OWNER" ||
+                          values.assignedRole === "ORGANIZATION_MANAGER";
+                        const price = isPremiumRole
+                          ? pricingData.pricing.ownerAndManager
+                          : pricingData.pricing.member;
+                        const isSelected = values.appAccess?.includes(
+                          app.appId,
+                        );
 
-                      return (
-                        <div
-                          key={app}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            width: "100%",
-                            padding: "4px 8px",
-                            borderRadius: "6px",
-                            background: isSelected ? "#F9FAFB" : "transparent",
-                          }}
-                        >
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                size="small"
-                                checked={isSelected}
-                                onChange={() => {
-                                  const currentApps = values.appAccess || [];
-                                  const appName = app.toLowerCase();
-                                  const newApps = currentApps.includes(appName)
-                                    ? currentApps.filter((a) => a !== appName)
-                                    : [...currentApps, appName];
-                                  setFieldValue("appAccess", newApps);
-                                }}
-                              />
-                            }
-                            label={
-                              <span style={{ fontSize: "0.875rem" }}>
-                                {app}
-                              </span>
-                            }
-                          />
-                          <span
+                        return (
+                          <div
+                            key={app.appId}
                             style={{
-                              fontSize: "0.75rem",
-                              fontWeight: 600,
-                              color: isSelected ? "#101828" : "#98A2B3",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              width: "100%",
+                              padding: "4px 8px",
+                              borderRadius: "6px",
+                              background: isSelected
+                                ? "#F9FAFB"
+                                : "transparent",
                             }}
                           >
-                            ${price.toFixed(2)}/mo
-                          </span>
-                        </div>
-                      );
-                    })}
+                            <FormControlLabel
+                              control={
+                                <Checkbox
+                                  size="small"
+                                  checked={isSelected}
+                                  onChange={() => {
+                                    const currentApps = values.appAccess || [];
+                                    const appId = app.appId;
+                                    const newApps = currentApps.includes(appId)
+                                      ? currentApps.filter((a) => a !== appId)
+                                      : [...currentApps, appId];
+                                    setFieldValue("appAccess", newApps);
+                                  }}
+                                />
+                              }
+                              label={
+                                <span style={{ fontSize: "0.875rem" }}>
+                                  {app.name}
+                                  <span
+                                    style={{
+                                      fontSize: "0.75rem",
+                                      color:
+                                        app.maxSeats &&
+                                        (existingUsage[app.appId] || 0) >=
+                                          app.maxSeats
+                                          ? "#D92D20"
+                                          : "#667085",
+                                      marginLeft: "4px",
+                                      fontWeight:
+                                        app.maxSeats &&
+                                        (existingUsage[app.appId] || 0) >=
+                                          app.maxSeats
+                                          ? 600
+                                          : 400,
+                                    }}
+                                  >
+                                    ({existingUsage[app.appId] || 0} /{" "}
+                                    {app.maxSeats || "∞"} seats)
+                                    {app.maxSeats &&
+                                      (existingUsage[app.appId] || 0) >=
+                                        app.maxSeats &&
+                                      " - Limit Reached"}
+                                  </span>
+                                </span>
+                              }
+                            />
+                            <span
+                              style={{
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                color: isSelected ? "#101828" : "#98A2B3",
+                              }}
+                            >
+                              ${price.toFixed(2)}/mo
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
-                  {values.appAccess && values.appAccess.length > 0 && (
-                    <div
-                      style={{
-                        marginTop: "0.75rem",
-                        padding: "0.75rem",
-                        background: "#F5F8FF",
-                        borderRadius: "8px",
-                        border: "1px solid #D1E0FF",
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span
+                  {values.appAccess &&
+                    values.appAccess.length > 0 &&
+                    pricingData && (
+                      <div
                         style={{
-                          fontSize: "0.875rem",
-                          fontWeight: 500,
-                          color: "#344054",
+                          marginTop: "0.75rem",
+                          padding: "0.75rem",
+                          background: "#F5F8FF",
+                          borderRadius: "8px",
+                          border: "1px solid #D1E0FF",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
                         }}
                       >
-                        Total Monthly Cost:
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "1rem",
-                          fontWeight: 700,
-                          color: "#244BB6",
-                        }}
-                      >
-                        $
-                        {(
-                          values.appAccess.length *
-                          (values.assignedRole === "ORGANIZATION_OWNER" ||
-                          values.assignedRole === "ORGANIZATION_MANAGER"
-                            ? 99.99
-                            : 9.0)
-                        ).toFixed(2)}
-                      </span>
-                    </div>
-                  )}
+                        <span
+                          style={{
+                            fontSize: "0.875rem",
+                            fontWeight: 500,
+                            color: "#344054",
+                          }}
+                        >
+                          Total Monthly Cost:
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "1rem",
+                            fontWeight: 700,
+                            color: "#244BB6",
+                          }}
+                        >
+                          $
+                          {(
+                            values.appAccess.length *
+                            (values.assignedRole === "ORGANIZATION_OWNER" ||
+                            values.assignedRole === "ORGANIZATION_MANAGER"
+                              ? pricingData.pricing.ownerAndManager
+                              : pricingData.pricing.member)
+                          ).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
                 </div>
               </FormWrapper>
 

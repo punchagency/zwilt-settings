@@ -1,8 +1,8 @@
 import { gql } from "@apollo/client";
 
 export const CREATE_SETUP_INTENT = gql`
-  mutation CreateSetupIntent {
-    createSetupIntent {
+  mutation CreateOrganizationSetupIntent {
+    createOrganizationSetupIntent {
       success
       message
       data {
@@ -13,8 +13,8 @@ export const CREATE_SETUP_INTENT = gql`
 `;
 
 export const SET_DEFAULT_CARD = gql`
-  mutation SetDefaultCard($cardId: String!) {
-    setDefaultCard(cardId: $cardId) {
+  mutation SetOrganizationDefaultPaymentMethod($cardId: String!) {
+    setOrganizationDefaultPaymentMethod(paymentMethodId: $cardId) {
       success
       message
       data
@@ -23,8 +23,8 @@ export const SET_DEFAULT_CARD = gql`
 `;
 
 export const REMOVE_PAYMENT_METHOD = gql`
-  mutation RemoveClientPaymentMethods($paymentMethodId: String!) {
-    removeClientPaymentMethods(paymentMethodId: $paymentMethodId) {
+  mutation RemoveOrganizationPaymentMethod($paymentMethodId: String!) {
+    removeOrganizationPaymentMethod(paymentMethodId: $paymentMethodId) {
       success
       message
       data
