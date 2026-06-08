@@ -1,18 +1,25 @@
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { useEffect, useState } from "react";
 import Modal from "../modal";
-import { styled, Tooltip } from "@mui/material";
-import Image from "next/image";
-import Dropdown from "../dropdown";
-import ArrowDownIcon from "../../assets/img/arrow-down.svg";
-import ConfirmNotification from "./ConfirmNotification";
-import CustomDropdown from "../dropdown/CustomDropdown";
-import { useMutation, useQuery } from "@apollo/react-hooks";
-import { UPDATE_PROJECT } from "@/graphql/mutations/project";
-import { GET_USERS } from "@/graphql/queries/user";
+import { styled } from "@mui/material";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import { Formik } from "formik";
+import { useMutation } from "@apollo/react-hooks";
+import { useRecoilValue } from "recoil";
+import axios from "@/config/axiosConfig";
+import { apiUrl } from "@/config/apiUrl";
+import Input from "../common/input";
+import userAtom from "@/atoms/user-atom";
+import useLocationOptions from "@/hooks/team/use-location-options";
+import { INVITE_USERS_ADMIN } from "@/graphql/mutations/manageTeam";
+import { notifyErrorFxn, notifySuccessFxn } from "@/utils/toast-fxn";
+import {
+  Role,
+  UserTitle,
+  generateInviteUserPayLoad,
+  initialValues,
+  validationSchema,
+} from "../user/add-user/formHelper";
 
 interface NewProjectModalT {
   handleClose: () => void;
@@ -21,6 +28,261 @@ interface NewProjectModalT {
   selectedProject?: any;
   onComplete: () => void;
 }
+
+interface AppOption {
+  id: string;
+  label: string;
+}
+
+// Fallback used only if the managed-app registry can't be fetched, so the
+// form is always selectable.
+const FALLBACK_APP_OPTIONS: AppOption[] = [
+  { id: "tracker", label: "Tracker" },
+  { id: "recruit", label: "Recruit" },
+  { id: "sales", label: "Sales" },
+  { id: "market", label: "Market" },
+];
+
+const AddMemberModal: React.FC<NewProjectModalT> = ({
+  handleClose,
+  open,
+  onComplete,
+}) => {
+  const user = useRecoilValue(userAtom);
+  const attachedOrganizationId = user?.userData?.attachedOrganization?._id;
+  const { locationOptions, loading: locationsLoading } = useLocationOptions();
+
+  const [appOptions, setAppOptions] = useState<AppOption[]>(FALLBACK_APP_OPTIONS);
+  const [appsLoading, setAppsLoading] = useState(true);
+
+  useEffect(() => {
+    setAppsLoading(true);
+    axios
+      .get(`${apiUrl}/api/admin/pricing`)
+      .then((res) => {
+        const apps = res?.data?.data?.apps;
+        if (Array.isArray(apps) && apps.length) {
+          setAppOptions(
+            apps
+              .filter((a: any) => a.isActive)
+              .map((a: any) => ({ id: a.appId, label: a.name })),
+          );
+        }
+      })
+      .catch((err) => console.error("Failed to fetch app registry:", err))
+      .finally(() => setAppsLoading(false));
+  }, []);
+
+  const close = () => {
+    handleClose();
+    onComplete();
+  };
+
+  const [inviteUser, { loading }] = useMutation(INVITE_USERS_ADMIN, {
+    onCompleted: (data) => {
+      if (data?.inviteUsers) {
+        notifySuccessFxn("Invite sent successfully");
+        close();
+      }
+    },
+    onError: (error) => {
+      console.error("Invite user mutation error:", error);
+      if (
+        error?.message?.includes("E11000") ||
+        error?.message?.includes("duplicate key")
+      ) {
+        notifyErrorFxn(
+          "This email address is already registered. Please use a different email.",
+        );
+      } else {
+        notifyErrorFxn(error?.message || "Failed to send invite");
+      }
+    },
+  });
+
+  return (
+    <Modal
+      handleClose={close}
+      open={open}
+      borderRadius="15px"
+      title={"Add Members"}
+      width="30rem"
+      height="auto"
+    >
+      <NewProjectModalContent>
+        <Formik
+          enableReinitialize
+          initialValues={initialValues}
+          validationSchema={validationSchema}
+          onSubmit={async (values) => {
+            if (!attachedOrganizationId) {
+              notifyErrorFxn("No organization found for your account.");
+              return;
+            }
+            await inviteUser({
+              variables: {
+                input: {
+                  ...generateInviteUserPayLoad({
+                    ...values,
+                    attachedOrganizationId,
+                  }),
+                  projectIds: [],
+                },
+              },
+            });
+          }}
+        >
+          {({
+            handleBlur,
+            handleChange,
+            handleSubmit,
+            touched,
+            errors,
+            values,
+            setFieldValue,
+          }) => (
+            <>
+              <FormWrapper>
+                <FormSectionHeader>Member Details</FormSectionHeader>
+
+                <Input
+                  required
+                  options={UserTitle}
+                  value={values.title}
+                  type="select"
+                  label="Title"
+                  placeholder="Choose Title"
+                  error={touched.title && errors.title ? `${errors.title}` : ""}
+                  onChange={handleChange("title")}
+                  onBlur={handleBlur("title")}
+                />
+                <Input
+                  required
+                  label="First Name"
+                  placeholder="Enter First Name"
+                  value={values.firstName}
+                  error={
+                    touched.firstName && errors.firstName
+                      ? `${errors.firstName}`
+                      : ""
+                  }
+                  onChange={handleChange("firstName")}
+                  onBlur={handleBlur("firstName")}
+                />
+                <Input
+                  required
+                  label="Last Name"
+                  placeholder="Enter Last Name"
+                  value={values.lastName}
+                  error={
+                    touched.lastName && errors.lastName
+                      ? `${errors.lastName}`
+                      : ""
+                  }
+                  onChange={handleChange("lastName")}
+                  onBlur={handleBlur("lastName")}
+                />
+                <Input
+                  required
+                  label="Official Email"
+                  placeholder="member@company.com"
+                  value={values.email}
+                  error={touched.email && errors.email ? `${errors.email}` : ""}
+                  onChange={handleChange("email")}
+                  onBlur={handleBlur("email")}
+                />
+                <Input
+                  required
+                  options={Role}
+                  type="select"
+                  label="Assigned Role"
+                  placeholder="Select Role"
+                  value={values.assignedRole}
+                  error={
+                    touched.assignedRole && errors.assignedRole
+                      ? `${errors.assignedRole}`
+                      : ""
+                  }
+                  onChange={handleChange("assignedRole")}
+                  onBlur={handleBlur("assignedRole")}
+                />
+                <Input
+                  required
+                  options={locationOptions}
+                  type="select"
+                  label="Team"
+                  placeholder={
+                    locationsLoading ? "Loading teams..." : "Select Team"
+                  }
+                  value={values.location}
+                  error={
+                    touched.location && errors.location
+                      ? `${errors.location}`
+                      : ""
+                  }
+                  onChange={handleChange("location")}
+                  onBlur={handleBlur("location")}
+                  disabled={locationsLoading}
+                />
+
+                <AppAccessSection>
+                  <div className="label">App Access</div>
+                  <div className="apps">
+                    {appsLoading ? (
+                      <div className="apps-loading">
+                        <span className="spinner" /> Loading apps…
+                      </div>
+                    ) : (
+                      appOptions.map((app) => {
+                      const selected = (values.appAccess || []).includes(app.id);
+                      return (
+                        <FormControlLabel
+                          key={app.id}
+                          control={
+                            <Checkbox
+                              size="small"
+                              checked={selected}
+                              onChange={() => {
+                                const current = values.appAccess || [];
+                                const next = current.includes(app.id)
+                                  ? current.filter((a) => a !== app.id)
+                                  : [...current, app.id];
+                                setFieldValue("appAccess", next);
+                              }}
+                            />
+                          }
+                          label={
+                            <span style={{ fontSize: "0.875rem" }}>
+                              {app.label}
+                            </span>
+                          }
+                        />
+                      );
+                      })
+                    )}
+                  </div>
+                </AppAccessSection>
+              </FormWrapper>
+
+              <NewProjectModalBtn>
+                <button onClick={close}>Cancel</button>
+                <button
+                  className="primary"
+                  onClick={() => handleSubmit()}
+                  disabled={loading}
+                >
+                  {loading ? "Sending..." : "Send Invite"}
+                </button>
+              </NewProjectModalBtn>
+            </>
+          )}
+        </Formik>
+      </NewProjectModalContent>
+    </Modal>
+  );
+};
+
+export default AddMemberModal;
 
 const NewProjectModalContent = styled("div")`
   display: flex;
@@ -37,38 +299,34 @@ const FormSectionHeader = styled("h3")`
   font-size: 1rem;
 `;
 
-const DropdownContentWrapper = styled("div")`
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items; center;
-    font-size: 0.875rem;
-    color: #02120d;
-    font-weight: 500;
-  
-    padding: 0.6rem 0.9rem;
-    gap: 8px;
-  
-    > span {
-      display: flex;
-      align-items: center;
-    }
-    > img {
-      width: 24px;
-      height: 24px;
-    }
-  `;
-
-const DropdownWrapper = styled("div")`
-  border: 1px solid #d0d5dd;
-  border-radius: 8px;
-`;
-
-const FormDropdownInputWrapper = styled("div")`
+const FormWrapper = styled("div")`
   display: flex;
   flex-direction: column;
-  margin-bottom: 1.5rem;
-  gap: 5px;
+  gap: 1rem;
+  padding: 1.5rem 0;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  max-height: calc(80vh - 120px);
+
+  ::-webkit-scrollbar {
+    width: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+`;
+
+const AppAccessSection = styled("div")`
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 
   .label {
     color: #52625d;
@@ -77,113 +335,38 @@ const FormDropdownInputWrapper = styled("div")`
     line-height: 1.25rem;
   }
 
-  > div {
+  .apps {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    min-height: 2.25rem;
   }
-  > span {
-    font-size: 0.7rem;
-    line-height: 1.125rem;
-    font-weight: 400;
+
+  .apps-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
     color: #667085;
   }
-`;
 
-const FromDropdownExtraInfo = styled("div")`
-  color: #244bb6;
-  font-weight: 400;
-  line-height: 1.25rem;
-  font-size: 0.875rem;
-`;
-
-interface FormDropdownInputT {
-  data: Array<string>;
-  label: string;
-  extraLabel: string;
-  extra: string;
-  extraX: string;
-  placeholder: string;
-}
-const FormDropdownInput: React.FC<FormDropdownInputT> = ({
-  data,
-  label,
-  extra,
-  extraLabel,
-  extraX,
-  placeholder,
-}) => {
-  return (
-    <FormDropdownInputWrapper>
-      <div>
-        <label className="label">{label}</label>
-        <FromDropdownExtraInfo>
-          {extraLabel} {extra}
-        </FromDropdownExtraInfo>
-      </div>
-      <span>{extraX}</span>
-      <DropdownWrapper>
-        <Dropdown data={data} setValue={(x) => x}>
-          <DropdownContentWrapper>
-            <span>{placeholder}</span>
-            <Image src={ArrowDownIcon} alt="" />
-          </DropdownContentWrapper>
-        </Dropdown>
-      </DropdownWrapper>
-    </FormDropdownInputWrapper>
-  );
-};
-
-const FormWrapper = styled("div")`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1.5rem 0;
-  overflow-y: auto;
-  padding-right: 0.5rem;
-  max-height: calc(80vh - 120px); /* Subtract space for header and buttons */
-
-  /* for webkit-based browsers */
-  ::-webkit-scrollbar {
-    width: 5px;
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #d0d5dd;
+    border-top-color: #50589f;
+    border-radius: 50%;
+    display: inline-block;
+    animation: addmembers-spin 0.7s linear infinite;
   }
 
-  ::-webkit-scrollbar-track {
-    background: #f1f1f1;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 5px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: #555;
-  }
-
-  ::-webkit-scrollbar-corner {
-    background: #f1f1f1;
-  }
-
-  /* for Firefox */
-  .scrollbar {
-    width: 5px;
-  }
-
-  .scrollbar-track {
-    background: #f1f1f1;
-  }
-
-  .scrollbar-thumb {
-    background: #888;
-    border-radius: 5px;
-  }
-
-  .scrollbar-thumb:hover {
-    background: #555;
-  }
-
-  .scrollbar-corner {
-    background: #f1f1f1;
+  @keyframes addmembers-spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 `;
 
@@ -214,229 +397,10 @@ const NewProjectModalBtn = styled("div")`
     color: #f8f9fb;
     border: 1px solid #50589f;
     font-weight: 600;
+
+    &:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
   }
 `;
-
-const AddMemberModal: React.FC<NewProjectModalT> = ({
-  handleClose,
-  open,
-  action,
-  selectedProject,
-  onComplete,
-}) => {
-  const key = Math.random();
-
-  const [openConfirmModal, setOpenConfirmModal] = useState(false);
-  const closeConfirmModal = () => {
-    handleClose();
-    setOpenConfirmModal(false);
-    setSuccess(undefined);
-  };
-
-  const membersId = selectedProject?.members?.map((e: any) => e?._id) || [];
-  const managersId = selectedProject?.managers?.map((e: any) => e?._id) || [];
-  const qaId = selectedProject?.qa?.map((e: any) => e?._id) || [];
-
-  const [members, setMembers] = useState(membersId);
-  const [managers, setManagers] = useState(managersId);
-  const [qa, setQa] = useState(qaId);
-  const [projectName, setProjectName] = useState(
-    selectedProject?.name?.name || ""
-  );
-  const [confirm, setConfirm] = useState(false);
-  const [success, setSuccess] = useState<"true" | "error" | null | "loading">();
-
-  useEffect(() => {
-    setProjectName(selectedProject?.name?.name);
-    setManagers(managersId);
-    setMembers(membersId);
-    setQa(qaId);
-  }, [selectedProject]);
-
-  const [
-    editProject,
-    { loading: editProjectLoading, error: editProjectError },
-  ] = useMutation(UPDATE_PROJECT);
-  // console.log(data, "fetching user");
-
-  const { loading, error, data } = useQuery(GET_USERS, {
-    fetchPolicy: "network-only",
-    variables: {
-      input: {
-        status: "ACTIVE",
-      },
-    },
-  });
-  const membersData = useMemo(() => {
-    return data?.getUsers?.data
-      ?.filter((e: any) => e.status === 'ACTIVE')
-      ?.map((e: any) => ({
-        ...e,
-        id: e._id,
-        name: e.name ? e.name : `${e.firstName} ${e.lastName}`,
-      }));
-  }, [data]);
-
-  const managersData = useMemo(() => {
-    return membersData?.filter((e: any) => e.role !== "" && e.status === 'ACTIVE');
-  }, [membersData]);
-
-  // Add sorting functions to ensure selected users appear at top of dropdowns
-  const sortedMembers = () => {
-    if (!membersId || !membersData) return membersData || [];
-    return [...membersData].sort((a: any, b: any) => {
-      if (membersId.includes(a.id) && !membersId.includes(b.id)) {
-        return -1;
-      } else if (!membersId.includes(a.id) && membersId.includes(b.id)) {
-        return 1;
-      } else {
-        return 0;
-      }
-    });
-  };
-
-  const sortedManagers = () => {
-    if (!managersId || !managersData) return managersData || [];
-    return [...managersData].sort((a: any, b: any) => {
-      if (managersId.includes(a.id) && !managersId.includes(b.id)) {
-        return -1;
-      } else if (!managersId.includes(a.id) && managersId.includes(b.id)) {
-        return 1;
-      } else {
-        return 0;
-      }
-    });
-  };
-
-  const sortedQA = () => {
-    if (!qaId || !membersData) return membersData || [];
-    return [...membersData].sort((a: any, b: any) => {
-      if (qaId.includes(a.id) && !qaId.includes(b.id)) {
-        return -1;
-      } else if (!qaId.includes(a.id) && qaId.includes(b.id)) {
-        return 1;
-      } else {
-        return 0;
-      }
-    });
-  };
-
-  const updateProject = async () => {
-    setSuccess("loading");
-    try {
-      const updatePayload = {
-        ProjectId: selectedProject?.id,
-        projectName: projectName,
-        projectImage: null,
-        members: members,
-        managers: managers,
-        qa: qa,
-      };
-      const { data } = await editProject({
-        variables: {
-          input: updatePayload,
-        },
-      });
-      setSuccess("true");
-    } catch (error) {
-      setSuccess("error");
-    }
-  };
-
-  const clearData = () => {
-    setProjectName("");
-    setMembers([]);
-    setManagers([]);
-    setQa([]);
-  };
-
-  useEffect(() => {
-    if (confirm) {
-      switch (action) {
-        case "edit":
-          updateProject();
-          break;
-      }
-    }
-  }, [confirm]);
-  return (
-    <Modal
-      handleClose={() => {
-        handleClose();
-        clearData();
-        onComplete();
-      }}
-      open={open}
-      borderRadius="15px"
-      title={"Add Members"}
-      width="30rem"
-      height="auto"
-    >
-      <NewProjectModalContent>
-        <ConfirmNotification
-          selected={selectedProject}
-          action={action}
-          open={openConfirmModal}
-          close={closeConfirmModal}
-          handleConfirm={() => setConfirm(true)}
-          success={success}
-        />
-        <FormWrapper>
-          <FormSectionHeader>Members Settings</FormSectionHeader>
-          <CustomDropdown
-            data={sortedManagers()}
-            extra={managers?.length || "0"}
-            extraLabel="Manager"
-            extraX="Oversees and manages the project"
-            label="Assigned Managers"
-            placeholder="Select Managers"
-            value={managers}
-            onChange={(e: Array<any>) => setManagers(e)}
-            listWrapperStyle={{ maxHeight: "12rem" }}
-          />
-
-          <CustomDropdown
-            data={sortedQA()}
-            extra={qa?.length || "0"}
-            extraLabel="QA"
-            extraX="Quality assurance and ticket approval authority"
-            label="Assigned QA Members"
-            placeholder="Select QA Members"
-            onChange={(e: Array<any>) => setQa(e)}
-            value={qa}
-            listWrapperStyle={{ maxHeight: "12rem" }}
-          />
-
-          <CustomDropdown
-            data={sortedMembers()}
-            extra={members?.length || "0"}
-            extraLabel="Members"
-            extraX="Users that contributes to this projects"
-            label="Assigned Members"
-            placeholder="Select Memebers"
-            onChange={(e: Array<any>) => setMembers(e)}
-            value={members}
-            listWrapperStyle={{ maxHeight: "12rem" }}
-          />
-        </FormWrapper>
-
-        <NewProjectModalBtn>
-          <button
-            onClick={() => {
-              handleClose();
-              clearData();
-              onComplete();
-            }}
-          >
-            Cancel
-          </button>
-          <button className="primary" onClick={() => setOpenConfirmModal(true)}>
-            {action === "edit" ? "Update" : "Create"}
-          </button>
-        </NewProjectModalBtn>
-      </NewProjectModalContent>
-    </Modal>
-  );
-};
-
-export default AddMemberModal;

@@ -20,6 +20,7 @@ const AuthGuard: React.FC<React.PropsWithChildren> = ({ children }) => {
           process.env.NEXT_PUBLIC_APP_SERVER || "http://localhost:5005";
         const response = await fetch(`${baseUrl}/api/v1/identity/me`, {
           method: "GET",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
             ...(parsedToken?.token && { "x-auth-token": parsedToken.token }),

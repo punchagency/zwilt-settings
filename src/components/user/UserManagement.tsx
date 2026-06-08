@@ -165,14 +165,13 @@ const Users: React.FC = () => {
   }, []);
 
   const formatStatus = React.useCallback(
-    (status: string, acceptedInvite: boolean): string => {
+    (status: string): string => {
       if (!status) return "";
       const statusLower = status.toLowerCase();
       if (statusLower === "active") return "Active";
-      if (["suspended", "archive", "deleted"].includes(statusLower))
+      if (["suspended", "archive", "deleted", "deactivated", "inactive"].includes(statusLower))
         return "Inactive";
-      if (statusLower === "invited" || acceptedInvite === false)
-        return "Invited";
+      if (statusLower === "invited") return "Invited";
       return status;
     },
     [],
@@ -204,7 +203,12 @@ const Users: React.FC = () => {
 
   const fetchUserStats = React.useCallback(async () => {
     try {
-      const res = await axios.get(`${apiUrl}/api/v1/organization/stats`, {
+      const orgId =
+        user?.userData?.attachedOrganization?._id ||
+        user?.userData?.organizationId ||
+        "";
+      const res = await axios.get(`${apiUrl}/api/admin/users/stats`, {
+        params: { orgId: orgId || undefined },
         withCredentials: true,
       });
       if (res.data.success) {
@@ -219,7 +223,10 @@ const Users: React.FC = () => {
     } catch (err) {
       console.error("Failed to fetch user stats:", err);
     }
-  }, []);
+  }, [
+    user?.userData?.attachedOrganization?._id,
+    user?.userData?.organizationId,
+  ]);
 
   const fetchData = React.useCallback(
     async (params?: { status?: string; location?: string }) => {
@@ -229,10 +236,18 @@ const Users: React.FC = () => {
         const status = params?.status || getActiveTabText();
         const location = params?.location || selectedLocation;
 
+        // Org admins only manage users in their own organization — scope the
+        // listing to the caller's org so it matches the org-scoped profile view.
+        const orgId =
+          user?.userData?.attachedOrganization?._id ||
+          user?.userData?.organizationId ||
+          "";
+
         const res = await axios.get(`${apiUrl}/api/admin/users`, {
           params: {
             status,
             location: location || undefined,
+            orgId: orgId || undefined,
             limit: 100,
           },
           withCredentials: true,
@@ -249,7 +264,7 @@ const Users: React.FC = () => {
             image: u.profileImg,
             role: formatRole(u.role),
             rawRole: u.role,
-            status: formatStatus(u.seatStatus || u.status, true),
+            status: formatStatus(u.status),
             apps: u.appAccess || [],
             source: u.source || "core",
             location: u.location || "",
@@ -271,13 +286,15 @@ const Users: React.FC = () => {
       formatStatus,
       formatDate,
       fetchUserStats,
+      user?.userData?.attachedOrganization?._id,
+      user?.userData?.organizationId,
     ],
   );
 
   useEffect(() => {
     const initFetch = async () => {
       try {
-        const pricingResponse = await axios.get(`${apiUrl}/api/admin/pricing`, {
+        const pricingResponse = await axios.get(`${apiUrl}/api/admin/earnings/pricing`, {
           withCredentials: true,
         });
         if (pricingResponse.data.success) {
@@ -340,21 +357,11 @@ const Users: React.FC = () => {
 
     const filteredUsers = userData.filter((user: any) => {
       if (activeTab === 0) {
-        return (
-          user?.status?.toLowerCase() === "active" &&
-          user.acceptedInvite !== false
-        );
+        return user?.status?.toLowerCase() === "active";
       } else if (activeTab === 1) {
-        return (
-          ["archive", "suspended", "deleted"].includes(
-            user?.status?.toLowerCase(),
-          ) && user.acceptedInvite !== false
-        );
+        return user?.status?.toLowerCase() === "inactive";
       } else {
-        return (
-          user?.status?.toLowerCase() === "invited" ||
-          user.acceptedInvite === false
-        );
+        return user?.status?.toLowerCase() === "invited";
       }
     });
 
@@ -574,9 +581,7 @@ const Users: React.FC = () => {
         if (activeTab === 0) {
           statusMatch = user?.status?.toLowerCase() === "active";
         } else if (activeTab === 1) {
-          statusMatch = ["archive", "suspended", "deleted"].includes(
-            user?.status?.toLowerCase(),
-          );
+          statusMatch = user?.status?.toLowerCase() === "inactive";
         } else {
           statusMatch = user?.status?.toLowerCase() === "invited";
         }
@@ -605,7 +610,7 @@ const Users: React.FC = () => {
               data.projectList?.length || data.projects?.length || 0,
             projectList: data.projectList || data.projects || [],
             id: data.id,
-            status: formatStatus(data.status, data.acceptedInvite),
+            status: formatStatus(data.status),
             apps: data.apps || [],
           };
         }),
@@ -2344,7 +2349,7 @@ const Users: React.FC = () => {
                     setUsersSelected(e);
                   }}
                   onClick={(row: any) => {
-                    router.push(`/user/add-user?sId=${row.id}&view=${true}`);
+                    router.push(`/user/profile?sId=${row.id}`);
                   }}
                   columns={columns}
                   data={tableData}
@@ -2805,7 +2810,7 @@ const AppAccessModal = ({
     try {
       setIsUpdating(true);
       await axios.patch(
-        `${apiUrl}/api/admin/users/${clientId}/apps`,
+        `${apiUrl}/api/admin/users/${clientId}/app-access`,
         {
           appAccess: selectedApps,
         },

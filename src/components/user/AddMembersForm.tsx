@@ -8,17 +8,17 @@ import React, {
 import axios from "@/config/axiosConfig";
 import { apiUrl } from "@/config/apiUrl";
 import Modal from "../modal";
-import { styled } from "@mui/material";
+import { styled, Skeleton, Box } from "@mui/material";
 import { awsUpload } from "@/utils/uploadMedaia";
 import Image from "next/image";
 import ImageIcon from "@mui/icons-material/Image";
 import Input from "../common/input";
 import { useLazyQuery, useMutation } from "@apollo/react-hooks";
 import {
-  INVITE_USER,
   UPDATE_USER,
   ADD_PROJECT_MEMBER,
 } from "@/graphql/mutations/user";
+import { INVITE_USERS_ADMIN } from "@/graphql/mutations/manageTeam";
 import CloseIcon from "@mui/icons-material/Close";
 import {
   IInitialValues,
@@ -132,7 +132,7 @@ function AddMembersForm({
     fetchPricing();
   }, []);
 
-  const [inviteUser, { data, loading, error }] = useMutation(INVITE_USER, {
+  const [inviteUser, { data, loading, error }] = useMutation(INVITE_USERS_ADMIN, {
     onCompleted: (data) => {
       if (data?.inviteUsers) {
         notifySuccessFxn("Invite sent successfully");
@@ -155,7 +155,7 @@ function AddMembersForm({
     },
   });
 
-  const [fetchUser] = useLazyQuery<any>(GET_USER_BY_ID, {
+  const [fetchUser, { loading: loadingUser }] = useLazyQuery<any>(GET_USER_BY_ID, {
     onCompleted: (data) => {
       let name = data.getUserById.data?.name ? data.getUserById.data.name : "";
       let userDataObj = {
@@ -261,11 +261,23 @@ function AddMembersForm({
       height="45rem"
     >
       <AddMembersFormWrapper>
+        {loadingUser ? (
+          <Box sx={{ p: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+              <Skeleton variant="circular" width={64} height={64} />
+              <Box sx={{ flex: 1 }}>
+                <Skeleton variant="text" width="60%" height={24} />
+                <Skeleton variant="text" width="40%" height={20} />
+              </Box>
+            </Box>
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} variant="rectangular" height={48} sx={{ mb: 2, borderRadius: 1 }} />
+            ))}
+          </Box>
+        ) : (
         <Formik
           enableReinitialize
-          initialValues={{
-            ...initialValues,
-          }}
+          initialValues={editInitialState || initialValues}
           validationSchema={validationSchema.shape({
             teamId:
               (window as any).yup?.string?.().required?.("Team is required") ||
@@ -751,6 +763,7 @@ function AddMembersForm({
             </>
           )}
         </Formik>
+        )}
       </AddMembersFormWrapper>
     </Modal>
   );
