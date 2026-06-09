@@ -43,6 +43,10 @@ export const GET_USER_BY_ID = gql`
         }
         annualLeaveBalance
         availableLeave
+        teams {
+          _id
+          name
+        }
       }
     }
   }

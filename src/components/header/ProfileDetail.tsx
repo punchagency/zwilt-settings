@@ -27,7 +27,7 @@ const ProfileDetail: React.FC<profileDetailType> = ({
           <div className='relative'>
             <div className='absolute right-0 w-[0.52vw] h-[0.52vw] rounded-[0.52vw]  bg-[#3AD349] border-[0.104vw] border-[#fff] z-[10]'></div>
             <Image
-              src={userState?.user?.profile_img || userState?.profile_img || userAvatar}
+              src={userState?.user?.profileImg || userState?.user?.profile_img || userState?.profile_img || userAvatar}
               className='h-[2.15vw] w-[2.15vw] border rounded-[0.63vw] object-cover'
               width={41.38}
               height={40}

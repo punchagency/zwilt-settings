@@ -16,7 +16,7 @@ const ProfileContent:React.FC<ProfileContentType> = ({userProfileRef, userState,
     className='absolute flex flex-col items-center justify-center right-0 top-[6.5vw] mr-[3.33vw] w-[17.25vw] h-auto bg-white border border-gray-100 rounded-[1.041vw] z-[10] p-[0.83vw] shadow-custom gap-[0.75rem]'
   >
     <Image
-      src={userState?.user?.profile_img || userState?.profile_img || userAvatar}
+      src={userState?.user?.profileImg || userState?.user?.profile_img || userState?.profile_img || userAvatar}
       className='h-[6.666vw] w-[6.4vw] border rounded-[1.5625vw] object-cover mx-auto'
       width={100}
       height={100}

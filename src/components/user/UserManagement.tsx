@@ -1079,7 +1079,7 @@ const Users: React.FC = () => {
       );
       setShowDialog(true);
     } else if (value === "editUser") {
-      router.push(`/user/add-user?sId=${userId}&edit=${true}`);
+      router.push(`/user/profile?sId=${userId}`);
     } else if (value === "reInviteUser") {
       showDialogBox(
         "Are you sure you want to",

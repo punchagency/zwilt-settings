@@ -48,7 +48,7 @@ const Page = styled(Box)({
   fontFamily: "Switzer",
   padding: "1.5rem 2rem",
   color: "#282833",
-  maxWidth: 960,
+  maxWidth: "95%",
   margin: "0 auto",
 });
 
@@ -134,7 +134,13 @@ const StatusChip = ({ status }: { status?: string }) => {
   );
 };
 
-const Field = ({ label, value }: { label: string; value?: React.ReactNode }) => (
+const Field = ({
+  label,
+  value,
+}: {
+  label: string;
+  value?: React.ReactNode;
+}) => (
   <Box sx={{ minWidth: 180 }}>
     <Label>{label}</Label>
     <Value>{value === "" || value == null ? "—" : value}</Value>
@@ -223,14 +229,17 @@ const ProfilePage = () => {
   const setField = (k: string) => (v: string) =>
     setForm((f: any) => ({ ...f, [k]: v }));
 
-  const [updateInfo, { loading: savingInfo }] = useMutation(UPDATE_MEMBER_INFO, {
-    onCompleted: () => {
-      notifySuccessFxn("Details updated");
-      setEditingInfo(false);
-      refetch();
+  const [updateInfo, { loading: savingInfo }] = useMutation(
+    UPDATE_MEMBER_INFO,
+    {
+      onCompleted: () => {
+        notifySuccessFxn("Details updated");
+        setEditingInfo(false);
+        refetch();
+      },
+      onError: (e) => notifyErrorFxn(e?.message || "Failed to update details"),
     },
-    onError: (e) => notifyErrorFxn(e?.message || "Failed to update details"),
-  });
+  );
 
   const saveInfo = () => {
     if (!user) return;
@@ -336,7 +345,11 @@ const ProfilePage = () => {
         <Button
           startIcon={<ArrowBackIcon />}
           onClick={() => router.back()}
-          sx={{ fontFamily: "Switzer", textTransform: "none", color: "#282833" }}
+          sx={{
+            fontFamily: "Switzer",
+            textTransform: "none",
+            color: "#282833",
+          }}
         >
           Back
         </Button>
@@ -405,8 +418,8 @@ const ProfilePage = () => {
               <AvatarP
                 img={user.profileImg}
                 initial={initials}
-                width="5rem"
-                height="5rem"
+                width="8rem"
+                height="8rem"
               />
               <Box sx={{ flex: 1 }}>
                 <Stack direction="row" spacing={1.5} alignItems="center">
@@ -472,16 +485,57 @@ const ProfilePage = () => {
               </Box>
             ) : (
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-                <Input label="First name" value={form.firstName} onChange={setField("firstName")} />
-                <Input label="Last name" value={form.lastName} onChange={setField("lastName")} />
-                <Input label="Phone" value={form.phone} onChange={setField("phone")} />
-                <Input label="Secondary email" value={form.secondaryEmail} onChange={setField("secondaryEmail")} />
-                <Input label="Date of birth" value={form.dob} onChange={setField("dob")} type="date" />
-                <Input label="Gender" value={form.gender} onChange={setField("gender")} />
-                <Input label="Street" value={form.street} onChange={setField("street")} />
-                <Input label="City" value={form.city} onChange={setField("city")} />
-                <Input label="Country" value={form.country} onChange={setField("country")} />
-                <Input label="Zip code" value={form.zipCode} onChange={setField("zipCode")} />
+                <Input
+                  label="First name"
+                  value={form.firstName}
+                  onChange={setField("firstName")}
+                />
+                <Input
+                  label="Last name"
+                  value={form.lastName}
+                  onChange={setField("lastName")}
+                />
+                <Input
+                  label="Phone"
+                  value={form.phone}
+                  onChange={setField("phone")}
+                />
+                <Input
+                  label="Secondary email"
+                  value={form.secondaryEmail}
+                  onChange={setField("secondaryEmail")}
+                />
+                <Input
+                  label="Date of birth"
+                  value={form.dob}
+                  onChange={setField("dob")}
+                  type="date"
+                />
+                <Input
+                  label="Gender"
+                  value={form.gender}
+                  onChange={setField("gender")}
+                />
+                <Input
+                  label="Street"
+                  value={form.street}
+                  onChange={setField("street")}
+                />
+                <Input
+                  label="City"
+                  value={form.city}
+                  onChange={setField("city")}
+                />
+                <Input
+                  label="Country"
+                  value={form.country}
+                  onChange={setField("country")}
+                />
+                <Input
+                  label="Zip code"
+                  value={form.zipCode}
+                  onChange={setField("zipCode")}
+                />
               </Box>
             )}
           </Card>
@@ -493,6 +547,14 @@ const ProfilePage = () => {
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
                 <Field label="Job title" value={user.jobTitle} />
                 <Field label="Department" value={user.department} />
+                <Field
+                  label="Teams"
+                  value={
+                    user.teams && user.teams.length > 0
+                      ? user.teams.map((t: any) => t.name).join(", ")
+                      : "—"
+                  }
+                />
                 <Field label="Employee ID" value={user.employeeId} />
                 <Field label="Employment type" value={user.employmentType} />
                 <Field label="Start date" value={user.startDate} />
@@ -503,12 +565,46 @@ const ProfilePage = () => {
               </Box>
             ) : (
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-                <Input label="Job title" value={form.jobTitle} onChange={setField("jobTitle")} />
-                <Input label="Department" value={form.department} onChange={setField("department")} />
-                <Input label="Employee ID" value={form.employeeId} onChange={setField("employeeId")} />
-                <Input label="Employment type" value={form.employmentType} onChange={setField("employmentType")} />
-                <Input label="Start date" value={form.startDate} onChange={setField("startDate")} type="date" />
-                <Input label="Probation (months)" value={form.probationPeriod} onChange={setField("probationPeriod")} type="number" />
+                <Input
+                  label="Job title"
+                  value={form.jobTitle}
+                  onChange={setField("jobTitle")}
+                />
+                <Input
+                  label="Department"
+                  value={form.department}
+                  onChange={setField("department")}
+                />
+                <Field
+                  label="Teams"
+                  value={
+                    user.teams && user.teams.length > 0
+                      ? user.teams.map((t: any) => t.name).join(", ")
+                      : "—"
+                  }
+                />
+                <Input
+                  label="Employee ID"
+                  value={form.employeeId}
+                  onChange={setField("employeeId")}
+                />
+                <Input
+                  label="Employment type"
+                  value={form.employmentType}
+                  onChange={setField("employmentType")}
+                />
+                <Input
+                  label="Start date"
+                  value={form.startDate}
+                  onChange={setField("startDate")}
+                  type="date"
+                />
+                <Input
+                  label="Probation (months)"
+                  value={form.probationPeriod}
+                  onChange={setField("probationPeriod")}
+                  type="number"
+                />
               </Box>
             )}
 
@@ -523,13 +619,21 @@ const ProfilePage = () => {
                     ) : undefined
                   }
                   onClick={saveInfo}
-                  sx={{ fontFamily: "Switzer", textTransform: "none", background: "#244BB6" }}
+                  sx={{
+                    fontFamily: "Switzer",
+                    textTransform: "none",
+                    background: "#244BB6",
+                  }}
                 >
                   Save details
                 </Button>
                 <Button
                   onClick={() => setEditingInfo(false)}
-                  sx={{ fontFamily: "Switzer", textTransform: "none", color: "#86868E" }}
+                  sx={{
+                    fontFamily: "Switzer",
+                    textTransform: "none",
+                    color: "#86868E",
+                  }}
                 >
                   Cancel
                 </Button>
@@ -559,7 +663,12 @@ const ProfilePage = () => {
               />
             </Box>
             <Typography
-              sx={{ fontFamily: "Switzer", fontSize: 12, color: "#86868E", mt: 1 }}
+              sx={{
+                fontFamily: "Switzer",
+                fontSize: 12,
+                color: "#86868E",
+                mt: 1,
+              }}
             >
               Leave is managed in the Tracker app (read-only here).
             </Typography>
@@ -633,11 +742,16 @@ const ProfilePage = () => {
                         <Checkbox
                           checked={selectedApps.includes(app.id)}
                           onChange={() => toggleApp(app.id)}
-                          sx={{ color: "#244BB6", "&.Mui-checked": { color: "#244BB6" } }}
+                          sx={{
+                            color: "#244BB6",
+                            "&.Mui-checked": { color: "#244BB6" },
+                          }}
                         />
                       }
                       label={
-                        <Typography sx={{ fontFamily: "Switzer", fontSize: 14 }}>
+                        <Typography
+                          sx={{ fontFamily: "Switzer", fontSize: 14 }}
+                        >
                           {app.label}
                         </Typography>
                       }
@@ -703,7 +817,11 @@ const ProfilePage = () => {
         <DialogActions sx={{ p: 2 }}>
           <Button
             onClick={() => setRemoveOpen(false)}
-            sx={{ fontFamily: "Switzer", textTransform: "none", color: "#86868E" }}
+            sx={{
+              fontFamily: "Switzer",
+              textTransform: "none",
+              color: "#86868E",
+            }}
           >
             Cancel
           </Button>
@@ -711,12 +829,18 @@ const ProfilePage = () => {
             variant="contained"
             disabled={removing}
             startIcon={
-              removing ? <CircularProgress size={16} color="inherit" /> : undefined
+              removing ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : undefined
             }
             onClick={() =>
               user && removeMember({ variables: { memberId: user._id } })
             }
-            sx={{ fontFamily: "Switzer", textTransform: "none", background: "#C7271C" }}
+            sx={{
+              fontFamily: "Switzer",
+              textTransform: "none",
+              background: "#C7271C",
+            }}
           >
             Remove
           </Button>
