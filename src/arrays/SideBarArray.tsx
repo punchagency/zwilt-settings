@@ -30,16 +30,19 @@ export const sideBarArray: SideBar[] = [
     icon: companyImage,
     href: "/companyprofile",
     icon2: <ZwiltIcon />,
+    adminOnly: true,
   },
   {
     name: "Manage Team",
     icon: teamImage,
     href: "/manageteam",
+    adminOnly: true,
   },
   {
     name: " Payment & Billing",
     icon: paymentImage,
     href: "/payment",
+    adminOnly: true,
   },
   {
     name: "Password & Security",
@@ -50,22 +53,26 @@ export const sideBarArray: SideBar[] = [
     name: " Phone Account",
     icon: phoneImage,
     href: "/phoneaccount",
+    adminOnly: true,
   },
   {
     name: "Email Account",
     icon: emailImage,
     href: "/emailaccount",
+    adminOnly: true,
   },
 
   {
     name: "Interview Settings",
     icon: InterviewImage,
     href: "/interview",
+    adminOnly: true,
   },
   {
     name: "AI Credits",
     icon: starsImage,
     href: "/ai-credits",
+    adminOnly: true,
   },
   {
     name: "Notification Settings",

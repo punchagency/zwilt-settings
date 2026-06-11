@@ -145,7 +145,6 @@ const useTimeAndActivityGraphql: any = () => {
             user: user.userData?._id,
             role: finalRole,
             dateRange: [finalStartDate, finalEndDate],
-            organization: "65169b7ef0410efa3245d795",
           },
         },
       });
@@ -165,7 +164,6 @@ const useTimeAndActivityGraphql: any = () => {
             user: user.userData?._id,
             role: "USER",
             dateRange: [finalStartDate, finalEndDate],
-            organization: "65169b7ef0410efa3245d795",
           },
         },
       });
@@ -447,7 +445,6 @@ const useTimeAndActivityGraphql: any = () => {
           input: {
             filterBy: groupBy, //"USER",
             dateRange: [startDate, endDate],
-            organization: "65169b7ef0410efa3245d795",
             location: location || undefined, // Only add location if it's provided and not empty
             user: userId || undefined, // Add user filter for "Only Me" mode
             role: role || undefined, // Add role for proper data filtering
@@ -477,7 +474,6 @@ const useTimeAndActivityGraphql: any = () => {
       variables: {
         input: {
           status: "ACTIVE",
-          organization: "65169b7ef0410efa3245d795",
         },
       },
     });

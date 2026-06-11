@@ -32,7 +32,6 @@ const useAttendanceReportGraphql = () => {
     fetchAttendanceReport({
       variables: {
         input: {
-          organization: user?.userData?.attachedOrganization._id,
           user: user.userData?._id,
           role: user.userData?.role,
           // current: current,
@@ -47,7 +46,6 @@ const useAttendanceReportGraphql = () => {
       fetchAttendanceReport({
         variables: {
           input: {
-            organization: user?.userData?.attachedOrganization._id,
             // current: current,
             // limit: "10",
             user: user.userData?._id,

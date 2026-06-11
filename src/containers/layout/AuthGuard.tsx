@@ -43,14 +43,17 @@ const AuthGuard: React.FC<React.PropsWithChildren> = ({ children }) => {
           responseUser = rawData.user;
           organization = rawData.organization;
         }
-        setUserData(
-          !responseUser
-            ? null
-            : {
-                user: responseUser,
-                organization: organization,
-              },
-        );
+        // Roles drive admin-only UI (sidebar gating). identity/me returns these
+        // at the top level, not nested under user.
+        const currentUser = !responseUser
+          ? null
+          : {
+              user: responseUser,
+              organization: organization,
+              systemRole: rawData?.systemRole ?? null,
+              organizationRole: rawData?.organizationRole ?? rawData?.role ?? null,
+            };
+        setUserData(currentUser);
         setLoading(false);
 
         if (!responseUser) {
@@ -61,12 +64,7 @@ const AuthGuard: React.FC<React.PropsWithChildren> = ({ children }) => {
             window.localStorage.clear();
           }
         } else {
-          updateUser({
-            currentUser: {
-              user: responseUser,
-              organization: organization
-            }
-          });
+          updateUser({ currentUser });
         }
       } catch (err: any) {
         setLoading(false);

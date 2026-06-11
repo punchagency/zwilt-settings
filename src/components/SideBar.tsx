@@ -4,6 +4,7 @@ import Image from "next/image";
 import { sideBarArray } from "@/arrays/SideBarArray";
 import { useRouter } from "next/router";
 import useUser from "utils/recoil_store/hooks/use-user-state";
+import { isOrgAdmin } from "@/utils/adminAccess";
 
 const SideBar: React.FC = () => {
   const router = useRouter();
@@ -17,6 +18,11 @@ const SideBar: React.FC = () => {
   const { userState: userProp } = useUser();
   const userState = userProp?.currentUser;
   const logo = userState?.organization?.logo;
+
+  // Admin-only sections (org details, payment, manage team, email/phone
+  // accounts, interview settings, ai credits) are shown only to org admins
+  // (owner/manager) and system admins.
+  const isAdmin = isOrgAdmin(userState);
   // Handler to navigate to the clicked item
   const handleNavigation = useCallback(
     async (href: string, name: string) => {
@@ -29,11 +35,7 @@ const SideBar: React.FC = () => {
   return (
     <div>
       {memoizedSideBarArray.map((item) => {
-        if (
-          item.name === "Manage Team" &&
-          userState.clientAccountType !== "ADMIN"
-        )
-          return null;
+        if (item.adminOnly && !isAdmin) return null;
 
         return (
           <div

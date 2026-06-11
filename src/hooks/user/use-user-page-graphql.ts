@@ -500,9 +500,7 @@ const useUserPageGraphql = () => {
               email: email,
               profileImg: profileImg,
               location: userInfo?.location,
-              organization:
-                user?.userData?.attachedOrganization?._id ||
-                "65169b7ef0410efa3245d795",
+              organization: user?.userData?.attachedOrganization?._id,
             },
           },
         });

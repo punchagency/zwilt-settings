@@ -209,7 +209,6 @@ const useDailyTotalsGraphql = () => {
             input: {
               user: user.userData?._id,
               role: user.userData?.role,
-              organization: "65169b7ef0410efa3245d795",
             },
           },
         });
@@ -220,7 +219,6 @@ const useDailyTotalsGraphql = () => {
               user: user.userData?._id,
               dateRange: [startDate, endDate],
               role: user.userData?.role,
-              organization: "65169b7ef0410efa3245d795",
             },
           },
         });
@@ -400,7 +398,6 @@ const useDailyTotalsGraphql = () => {
             user: user.userData?._id,
             role: user.userData?.role,
             dateRange: [startDate, endDate],
-            organization: "65169b7ef0410efa3245d795",
             // Remove location parameter - fetch all data
           },
         },
