@@ -50,8 +50,8 @@ const AuthGuard: React.FC<React.PropsWithChildren> = ({ children }) => {
           : {
               user: responseUser,
               organization: organization,
-              systemRole: rawData?.systemRole ?? null,
-              organizationRole: rawData?.organizationRole ?? rawData?.role ?? null,
+              systemRole: responseUser?.systemRole ?? rawData?.systemRole ?? null,
+              organizationRole: responseUser?.organizationRole ?? responseUser?.role ?? rawData?.organizationRole ?? rawData?.role ?? null,
             };
         setUserData(currentUser);
         setLoading(false);
