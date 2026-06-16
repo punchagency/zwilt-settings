@@ -59,6 +59,9 @@ export const GET_ORG_BILLING_PREVIEW = gql`
         pricePerSeat
         total
         currency
+        viewerSeats
+        freeViewerSeats
+        viewerPricePerSeat
         services {
           name
           seats
