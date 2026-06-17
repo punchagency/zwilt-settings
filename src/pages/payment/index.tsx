@@ -61,30 +61,29 @@ const BillingSummary: React.FC = () => {
     fetchPolicy: "network-only",
   });
 
+  const invoiceDateRange = React.useMemo(() => {
+    const [month, year] = selectedPeriod.split('-');
+    const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
+    const y = parseInt(year, 10);
+    return {
+      dateFrom: new Date(y, monthIndex, 1).toISOString(),
+      dateTo: new Date(y, monthIndex + 1, 0, 23, 59, 59, 999).toISOString(),
+    };
+  }, [selectedPeriod]);
+
   const { data: invoicesData, loading: invoicesLoading } = useQuery(
     get_invoices,
     {
-      variables: { limit: 10, page: 1 },
+      variables: {
+        limit: 10,
+        page: 1,
+        dateFrom: invoiceDateRange.dateFrom,
+        dateTo: invoiceDateRange.dateTo,
+      },
       skip: !organizationId,
       fetchPolicy: "network-only",
     },
   );
-
-  useEffect(() => {
-    console.log("Billing Page Data:", {
-      orgBillingData,
-      orgBillingLoading,
-      orgBillingError,
-      invoicesData,
-      invoicesLoading,
-    });
-  }, [
-    orgBillingData,
-    orgBillingLoading,
-    orgBillingError,
-    invoicesData,
-    invoicesLoading,
-  ]);
 
   useEffect(() => {
     if (query.tab) {
@@ -369,7 +368,21 @@ const BillingSummary: React.FC = () => {
                                 )}
                               </span>
                             </td>
-...
+
+                            <td className="text-right py-[1.04vw]">
+                              <span
+                                className={`text-[0.73vw] border rounded-[2.60vw] px-[0.5vw] py-[0.15vw] font-medium ${
+                                  invoice.status?.toLowerCase() === "paid"
+                                    ? "text-[#17B26A] border-[#abefc6] bg-[#dcfae6]"
+                                    : invoice.status?.toLowerCase() === "failed"
+                                    ? "text-[#F04438] border-[#fda29b] bg-[#fef3f2]"
+                                    : "text-[#98A2B3] border-gray-300 bg-gray-100"
+                                }`}
+                              >
+                                {invoice.status ?? "—"}
+                              </span>
+                            </td>
+
                             <td className="text-right py-[1.04vw]">
                               <span className="text-[0.83vw] font-medium text-very-dark-grayish-blue">
                                 {invoice.stripeInvoiceId
@@ -380,7 +393,7 @@ const BillingSummary: React.FC = () => {
 
                             <td className="text-right py-[1.04vw]">
                               <span className="text-[0.83vw] mr-[1vw] font-medium text-very-dark-grayish-blue">
-                                USD ${(invoice.amount / 100).toFixed(2)}
+                                USD ${Number(invoice.amount ?? 0).toFixed(2)}
                               </span>
                             </td>
                           </tr>
