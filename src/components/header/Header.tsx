@@ -19,7 +19,6 @@ import NotificationBox from "../NotificationBox";
 import { calculatePxToPercentage } from "../ChatBox/styled";
 import MenuBox from "../MenuBox/MenuBox";
 
-
 interface UserData {
   profilePic: string;
   name: string;
@@ -118,15 +117,17 @@ const Header: React.FC = () => {
       console.error("Invalid domain");
     }
   };
+
+
   return (
-    <div className='w-full flex items-center justify-center py-[0.73vw] px-[0.83vw]'>
-      <div 
-        className='py-[0.78vw] w-[93.75vw] items-center justify-center flex rounded-[1.5625vw] bg-white' 
-        style={{ 
+    <div className="w-full flex items-center justify-center py-[0.73vw] px-[0.83vw]">
+      <div
+        className="py-[0.78vw] w-[93.75vw] items-center justify-center flex rounded-[1.5625vw] bg-white"
+        style={{
           zIndex: 997,
           opacity: isAnyModalOpen ? "0.05" : "1",
           transition: "opacity 0.2s ease-in-out",
-          pointerEvents: isAnyModalOpen ? "none" : "auto" // Disable interactions when modal is open
+          pointerEvents: isAnyModalOpen ? "none" : "auto", // Disable interactions when modal is open
         }}
       >
         <HeaderLogo />
@@ -140,22 +141,22 @@ const Header: React.FC = () => {
           />
         </div>
 
-        <div 
-          className='flex px-4' 
-          style={{ 
-            width: "auto", 
-            position: "relative", 
+        <div
+          className="flex px-4"
+          style={{
+            width: "auto",
+            position: "relative",
             zIndex: 997,
             opacity: isAnyModalOpen ? "0.05" : "1",
             transition: "opacity 0.2s ease-in-out",
-            pointerEvents: isAnyModalOpen ? "none" : "auto" // Disable interactions when modal is open
+            pointerEvents: isAnyModalOpen ? "none" : "auto", // Disable interactions when modal is open
           }}
         >
-          <div className='ml-[0.44vw]'>
+          <div className="ml-[0.44vw]">
             <ChatBox />
           </div>
 
-          <div className='ml-[0.44vw]'>
+          <div className="ml-[0.44vw]">
             <NotificationBox />
           </div>
 
@@ -195,10 +196,10 @@ const Header: React.FC = () => {
 
           {/* Success message */}
           {showSuccessMessage && (
-            <div className='absolute right-[0] top-[6.66vw] mr-[3.63vw] w-[15vw] bg-green-500 border border-gray-300 rounded-[0.7vw] z-[10] p-[0.83vw] text-white shadow-custom  overflow-visible'>
-              <div className='flex items-center space-x-2'>
-                <FontAwesomeIcon icon={faCheckCircle} className='text-white' />
-                <p className='text-sm'>Logout Successful!</p>
+            <div className="absolute right-[0] top-[6.66vw] mr-[3.63vw] w-[15vw] bg-green-500 border border-gray-300 rounded-[0.7vw] z-[10] p-[0.83vw] text-white shadow-custom  overflow-visible">
+              <div className="flex items-center space-x-2">
+                <FontAwesomeIcon icon={faCheckCircle} className="text-white" />
+                <p className="text-sm">Logout Successful!</p>
               </div>
             </div>
           )}

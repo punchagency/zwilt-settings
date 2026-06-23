@@ -140,7 +140,7 @@ export const transformUserDataToFormikFormat = (data: TGetUserCommon) => {
     title: (data as any)?.title || "",
     firstName: (data as any)?.firstName || "",
     lastName: (data as any)?.lastName || "",
-    profileImage: (data as any)?.profileImg || "",
+    profileImage: (data as any)?.profileImg || (data as any)?.profile_img || "",
     email: (data as any)?.email || "",
     assignedRole: (data as any)?.role || "",
     location: (data as any)?.location || "",

@@ -6,6 +6,7 @@ import { ClipLoader } from "react-spinners";
 import ChatMiniBox from "@/components/ChatMiniBox";
 import { useRouter } from "next/router";
 import useCrossAppLogoutListener from "@/hooks/useCrossAppLogoutListener";
+import { isOrgAdmin, isAdminOnlyPath } from "@/utils/adminAccess";
 
 export default function AppLayout({
   children,
@@ -21,9 +22,18 @@ export default function AppLayout({
   const currentUsers = 10;
   const maxUsers = 20;
 
+  const isAdmin = isOrgAdmin(currentUser);
+  const isAuthorized = !isAdminOnlyPath(router.pathname) || isAdmin;
+
   useEffect(() => {
     updateUser({ currentUser });
   }, [currentUser, updateUser]);
+
+  useEffect(() => {
+    if (currentUser && !isAuthorized) {
+      router.replace("/user");
+    }
+  }, [currentUser, isAuthorized, router]);
 
   return (
     <div className="bg-[#F4F4FA] max-w-full w-full" style={{ height: "100vh" }}>
@@ -49,14 +59,14 @@ export default function AppLayout({
                 currentUsers={currentUsers}
                 maxUsers={maxUsers}
                 setDismiss={() => setDismiss(true)}
-              /> */}
+               /> */}
               </div>
             )}
           </div>
         )}
         {/* pages layout */}
         {/* h-[78.70vh] */}
-        {userState ? (
+        {userState && isAuthorized ? (
           <div
             className={
               router?.pathname.includes("/chat")

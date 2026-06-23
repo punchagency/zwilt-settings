@@ -66,9 +66,7 @@ const UpdateOrganizationMemeberModal: React.FC<addTeamProps> = ({
   );
   const [imageError, setImageError] = useState<string | null>(null);
 
-  const { data, loading, error } = useQuery(GET_ORGANIZATION_MEMBERS, {
-    context: { clientName: "tracker" },
-  });
+  const { data, loading, error } = useQuery(GET_ORGANIZATION_MEMBERS);
 
   // Set selectedUser based on clientAccountType when the modal opens
   useEffect(() => {
@@ -122,7 +120,6 @@ const UpdateOrganizationMemeberModal: React.FC<addTeamProps> = ({
   };
 
   const [updateMemberProfile] = useMutation(UPDATE_MEMBER_PROFILE, {
-    context: { clientName: "tracker" },
     update(cache, { data: { updateMemberProfile } }) {
       try {
         const existingMembers: any = cache.readQuery({

@@ -1,56 +1,53 @@
 import React, { PropsWithChildren } from "react";
 import Modal from "../modal";
-import { Box, Button, styled } from "@mui/material";
-
-import CustomDropdown from "../dropdown/CustomDropdown";
-import ConfirmNotification from "../projects/ConfirmNotification";
-
-import { GET_PROJECTS } from "@/graphql/queries/user";
-import { ADD_PROJECT_MEMBER } from "@/graphql/mutations/user";
-import { useLazyQuery, useQuery, useMutation } from "@apollo/react-hooks";
-import userAtom from "@/atoms/user-atom";
+import { styled } from "@mui/material";
 import { useRecoilState } from "recoil";
+import userAtom from "@/atoms/user-atom";
 
 const NewProjectModalContent = styled("div")`
   margin-top: 1rem;
 `;
 
 const NewProjectModalBtn = styled("div")`
-// margin-top: 3rem;
-display: flex;
-justify-content: flex-end;
-gap: 1rem;
-
-> button {
-  all: unset;
-  padding: 0.5rem 0.9rem;
-  border-radius: 8px;
-  border: 1px solid #02120d;
-  // min-width: 120px;
   display: flex;
-  justify-content: center;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  font-weight: 500;
-  cursor: pointer;
-}
+  justify-content: flex-end;
+  gap: 1rem;
 
-> .primary {
-  background: #50589F;
-  color: #f8f9fb;
-  border: 1px solid #50589F;
-  font-weight: 600;
-}
+  > button {
+    all: unset;
+    padding: 0.5rem 0.9rem;
+    border-radius: 8px;
+    border: 1px solid #02120d;
+    display: flex;
+    justify-content: center;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  > .primary {
+    background: #50589f;
+    color: #f8f9fb;
+    border: 1px solid #50589f;
+    font-weight: 600;
+  }
+
+  > button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 `;
 
 interface IDialogBox extends PropsWithChildren {
   handleClose: () => void;
   open: boolean;
-  selectedUser: string;
+  selectedUser: string; // Maintain for compatibility if needed, though unused here
   onUpdate: () => void;
   title: string;
   actionText: string;
   height?: string;
+  isLoading?: boolean;
 }
 
 const DialogBox: React.FC<IDialogBox> = ({
@@ -60,15 +57,10 @@ const DialogBox: React.FC<IDialogBox> = ({
   onUpdate,
   title,
   actionText,
-  height
+  height,
+  isLoading,
 }) => {
-  const [openConfirmModal, setOpenConfirmModal] = React.useState(false);
-  const [selectedProjects, setSelectedProjects] = React.useState<(string | number)[]>([]);
-  const [user, setUser] = useRecoilState(userAtom);
-  const closeConfirmModal = () => {
-    setOpenConfirmModal(false);
-  };
-  
+  const [, setUser] = useRecoilState(userAtom); // Maintain consistent state hook usage
 
   return (
     <Modal
@@ -80,27 +72,20 @@ const DialogBox: React.FC<IDialogBox> = ({
       height={height}
     >
       <NewProjectModalContent>
-        {/* <ConfirmNotification
-          action={"edit"}
-          open={openConfirmModal}
-          close={closeConfirmModal}
-          onConfirm={()=>{}}
-        /> */}
         {children}
         <NewProjectModalBtn>
-        <button onClick={handleClose}>Cancel</button>
+          <button onClick={handleClose} disabled={isLoading}>
+            Cancel
+          </button>
           <button
-          disabled={false}
             className="primary"
+            disabled={isLoading}
             onClick={() => {
-              // addProjectMember();
-              setOpenConfirmModal(true);
               onUpdate();
             }}
           >
-            {actionText}
+            {isLoading ? "Saving..." : actionText}
           </button>
-         
         </NewProjectModalBtn>
       </NewProjectModalContent>
     </Modal>
@@ -108,10 +93,3 @@ const DialogBox: React.FC<IDialogBox> = ({
 };
 
 export default DialogBox;
-
-const ModalButton = styled(Button)(({ theme }) => ({
-  backgroundColor: "#244BB6",
-  padding: theme.customs.spacing.rem(0.8, 1.5),
-  borderRadius: theme.customs.spacing.rem(0.8),
-  fontFamily: "inter",
-}));

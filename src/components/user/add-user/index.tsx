@@ -6,7 +6,8 @@ import AddUserUpload from "./add-user-upload";
 import { Formik, useFormikContext } from "formik";
 import Button from "@/components/common/button";
 import { useLazyQuery, useMutation } from "@apollo/react-hooks";
-import { INVITE_USER, UPDATE_USER } from "@/graphql/mutations/user";
+import { UPDATE_USER } from "@/graphql/mutations/user";
+import { INVITE_USERS_ADMIN } from "@/graphql/mutations/manageTeam";
 import {
   IInitialValues,
   Role,
@@ -19,6 +20,8 @@ import {
 } from "./formHelper";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import axios from "axios";
+import { apiUrl } from "@/config/apiUrl";
 
 import { notifyErrorFxn, notifySuccessFxn } from "@/utils/toast-fxn";
 import { useRouter } from "next/router";
@@ -67,11 +70,23 @@ const AddUserForms = () => {
   const [editInitialState, setEditInitialState] =
     useState<IInitialValues>(initialValues);
   const [userData, setUserData] = useState<any>(null);
+  const [managedApps, setManagedApps] = useState<{appId: string; name: string; isActive: boolean}[]>([]);
   const teamsState = useRecoilValue(teamAtom);
   const teams = teamsState.teams || [];
   const [teamAtomState, setTeamAtomState] = useRecoilState(teamAtom);
   const { runGetTeamsQuery } = useTeamGraphql();
   const [teamsLoading, setTeamsLoading] = useState(false);
+
+  useEffect(() => {
+    axios
+      .get(`${apiUrl}/api/admin/pricing`)
+      .then((res) => {
+        if (res.data?.success && res.data?.data?.apps?.length) {
+          setManagedApps(res.data.data.apps.filter((a: any) => a.isActive));
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const LocationOptions =
     teams.length > 0
@@ -88,8 +103,7 @@ const AddUserForms = () => {
           },
         ];
 
-  const [inviteUser, { data, loading, error }] = useMutation(INVITE_USER, {
-    context: { clientName: "tracker" },
+  const [inviteUser, { data, loading, error }] = useMutation(INVITE_USERS_ADMIN, {
     onCompleted: (data) => {
       if (data?.inviteUsers) {
         notifySuccessFxn("Invite sent successfully");
@@ -100,8 +114,7 @@ const AddUserForms = () => {
     },
   });
 
-  const [fetchUser] = useLazyQuery<any>(GET_USER_BY_ID, {
-    context: { clientName: "tracker" },
+  const [fetchUser, { loading: loadingUser }] = useLazyQuery<any>(GET_USER_BY_ID, {
     onCompleted: (data) => {
       let name = data.getUserById.data?.name ? data.getUserById.data.name : "";
       let userDataObj = {
@@ -122,7 +135,6 @@ const AddUserForms = () => {
 
   const [updateUser, { data: editUserData, loading: loadingUpdateUser }] =
     useMutation(UPDATE_USER, {
-      context: { clientName: "tracker" },
       onCompleted: (data) => {
         if (data.editUser) {
           notifySuccessFxn("Profile updated successfully!");
@@ -187,7 +199,7 @@ const AddUserForms = () => {
     setTeamAtomState,
   ]);
 
-  if ((isEdit || isView) && !editInitialState) {
+  if ((isEdit || isView) && loadingUser) {
     return (
       <ProfileFormsContainer>
         <Skeleton variant="text" width="200px" height={40} sx={{ mb: 2 }} />
@@ -402,26 +414,34 @@ const AddUserForms = () => {
                   padding: "0.5rem",
                 }}
               >
-                {["Tracker", "Sales", "Recruit", "Market"].map((app) => (
-                  <FormControlLabel
-                    key={app}
-                    control={
-                      <Checkbox
-                        size="small"
-                        checked={values.appAccess?.includes(app.toLowerCase())}
-                        onChange={() => {
-                          const currentApps = values.appAccess || [];
-                          const appName = app.toLowerCase();
-                          const newApps = currentApps.includes(appName)
-                            ? currentApps.filter((a) => a !== appName)
-                            : [...currentApps, appName];
-                          setFieldValue("appAccess", newApps);
-                        }}
+                {managedApps.length === 0 ? (
+                  <span style={{ fontSize: "0.75rem", color: "#667085", padding: "4px" }}>
+                    Loading apps…
+                  </span>
+                ) : (
+                  managedApps.map((app) => {
+                    const isSelected = values.appAccess?.includes(app.appId);
+                    return (
+                      <FormControlLabel
+                        key={app.appId}
+                        control={
+                          <Checkbox
+                            size="small"
+                            checked={!!isSelected}
+                            onChange={() => {
+                              const currentApps = values.appAccess || [];
+                              const newApps = currentApps.includes(app.appId)
+                                ? currentApps.filter((a) => a !== app.appId)
+                                : [...currentApps, app.appId];
+                              setFieldValue("appAccess", newApps);
+                            }}
+                          />
+                        }
+                        label={<span style={{ fontSize: "0.875rem" }}>{app.name}</span>}
                       />
-                    }
-                    label={<span style={{ fontSize: "0.875rem" }}>{app}</span>}
-                  />
-                ))}
+                    );
+                  })
+                )}
               </div>
             </div>
             <InputContainer>

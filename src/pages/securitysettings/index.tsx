@@ -119,7 +119,7 @@ const Page: React.FC = ({}) => {
           Password & Security
         </p>
         <p className=' font-normal text-[0.833vw] text-[#6F6F76]  leading-[1.1vw] -mb-[0.28vw] '>
-          Manage your payment & billing information here.
+          Manage your password, two-factor authentication, and signed-in devices.
         </p>
       </div>
 

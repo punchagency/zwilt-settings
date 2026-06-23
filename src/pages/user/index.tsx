@@ -101,22 +101,15 @@ const Page: React.FC<userType> = ({ userId }) => {
   const defaultImage = placeholderImage.src || "/default-avatar.jpg";
   const [dataUploaded, setDataUploaded] = useState(true);
   const { updateUser, userState } = useUser();
-  const user = userState?.currentUser?.user;
+  const user =
+    userState?.currentUser?.user ||
+    (userState as any)?.user ||
+    ((userState as any)?.email ? userState : null);
   const [profileImage, setProfileImage] = useState<string>(
-    normalizeImageUrl(user?.profile_img) || defaultImage,
+    normalizeImageUrl(user?.profileImg || user?.profile_img) || defaultImage,
   );
   const [file, setFile] = useState<any>(null);
   const [imageLoadError, setImageLoadError] = useState(false);
-  //mutation
-  const [updateUserProfile] = useMutation(UpdateUserProfile, {
-    onCompleted: (data) => {
-      setDataUploaded(true);
-    },
-    onError: (error) => {
-      notifyErrorFxn("Error updating profile");
-      setDataUploaded(true);
-    },
-  });
 
   const showDelete = useDeleteAccount((state) => state.showDelete);
   const setShowDelete = useDeleteAccount((state) => state.setShowDelete);
@@ -147,6 +140,12 @@ const Page: React.FC<userType> = ({ userId }) => {
     try {
       // Show preview immediately
       const previewUrl = URL.createObjectURL(file);
+      console.log("[Profile] File selected:", {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        previewUrl,
+      });
       setProfileImage(previewUrl);
       setImageLoadError(false);
       setFile(file);
@@ -156,6 +155,7 @@ const Page: React.FC<userType> = ({ userId }) => {
     }
   };
 
+
   const formik = useFormik({
     initialValues: {
       firstName: user?.firstName || (user?.name ? user.name.split(" ")[0] : ""),
@@ -164,7 +164,7 @@ const Page: React.FC<userType> = ({ userId }) => {
         (user?.name ? user.name.split(" ").slice(1).join(" ") : ""),
       email: user?.email || "",
       phone: user?.phone || "",
-      teamRole: user?.role || "user",
+      teamRole: user?.role || user?.accountType || "user",
       image: user?.profile_img || "",
     },
     enableReinitialize: true, // This will reinitialize the form when userData changes
@@ -174,7 +174,6 @@ const Page: React.FC<userType> = ({ userId }) => {
       email: Yup.string()
         .email("Invalid email address")
         .required("Email is required"),
-      phone: Yup.string().required("Phone number is required"),
     }),
     validateOnBlur: true,
     validateOnChange: true,
@@ -183,20 +182,40 @@ const Page: React.FC<userType> = ({ userId }) => {
     },
   });
 
+  // Log validation errors whenever they change
+  useEffect(() => {
+    if (formik.submitCount > 0) {
+      console.log("[Profile] Formik Status:", {
+        isValid: formik.isValid,
+        isSubmitting: formik.isSubmitting,
+        submitCount: formik.submitCount,
+        errors: formik.errors,
+        values: formik.values,
+      });
+    }
+    if (Object.keys(formik.errors).length > 0) {
+      console.warn("[Profile] Formik validation errors:", formik.errors);
+    }
+  }, [formik.errors, formik.submitCount, formik.isValid]);
+
   const handleFormSubmit = async () => {
+    console.log("[Profile] handleFormSubmit called", {
+      values: formik.values,
+      hasFile: !!file,
+      isValid,
+    });
     if (
       formik.values.firstName === "" ||
-      formik.values.lastName === "" ||
-      formik.values.phone === ""
+      formik.values.lastName === ""
     ) {
       notifyErrorFxn("Please fill the required fields");
       return;
     }
 
-    if (!isValid) {
-      notifyErrorFxn("Please enter a valid phone number");
-      return;
-    }
+    // if (!isValid) {
+    //   notifyErrorFxn("Please enter a valid phone number");
+    //   return;
+    // }
 
     setDataUploaded(false);
     let uploadedImageUrl = null;
@@ -204,14 +223,19 @@ const Page: React.FC<userType> = ({ userId }) => {
     // Only attempt to upload if there's a new file
     if (file) {
       try {
+        console.log("[Profile] Starting S3 upload...", {
+          fileName: file.name,
+          dirName: "profile_images/",
+        });
         const data = await awsUpload({
           file,
           fileName: file.name,
           dirName: `profile_images/`,
         });
+        console.log("[Profile] S3 upload result:", data);
         uploadedImageUrl = data?.location;
       } catch (error) {
-        console.error("Image upload failed:", error);
+        console.error("[Profile] Image upload failed:", error);
         notifyErrorFxn(
           "Failed to upload profile image, but profile will still be updated",
         );
@@ -220,28 +244,59 @@ const Page: React.FC<userType> = ({ userId }) => {
 
     try {
       // Proceed with profile update regardless of image upload success
-      await updateUserProfile({
-        variables: {
-          input: {
-            firstName: formik.values.firstName,
-            lastName: formik.values.lastName,
-            profile_img: file
-              ? uploadedImageUrl
-              : profileImage === defaultImage
-                ? null
-                : profileImage,
-            phone: formik.values.phone,
-          },
-        },
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("zw_us") : null;
+      const parsedToken = token ? JSON.parse(token) : null;
+
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_SERVER || "http://localhost:5005";
+      const payload = {
+        firstName: formik.values.firstName,
+        lastName: formik.values.lastName,
+        profileImg: file
+          ? uploadedImageUrl
+          : profileImage === defaultImage
+            ? null
+            : profileImage,
+      };
+
+      console.log("[Profile] Sending update to backend:", {
+        url: `${baseUrl}/api/v1/identity/profile`,
+        payload,
       });
+
+      const response = await fetch(`${baseUrl}/api/v1/identity/profile`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(parsedToken?.token && { "x-auth-token": parsedToken.token }),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const responseData = await response.json();
+      console.log("[Profile] Backend response:", responseData);
+
+      if (!response.ok) {
+        throw new Error(responseData?.message || "Failed to update profile");
+      }
+
+      notifySuccessFxn("Profile updated successfully");
+      setDataUploaded(true);
 
       updateUser({
         currentUser: {
+          ...userState?.currentUser,
           user: {
             ...user,
             firstName: formik.values.firstName,
             lastName: formik.values.lastName,
             name: formik.values.firstName + " " + formik.values.lastName,
+            profileImg: file
+              ? uploadedImageUrl
+              : profileImage === defaultImage
+                ? null
+                : profileImage,
             profile_img: file
               ? uploadedImageUrl
               : profileImage === defaultImage
@@ -251,23 +306,11 @@ const Page: React.FC<userType> = ({ userId }) => {
         },
       });
 
-      socket.emit("updateProfile", {
-        firstName: formik.values.firstName,
-        lastName: formik.values.lastName,
-        imageUrl: file
-          ? uploadedImageUrl
-          : profileImage === defaultImage
-            ? null
-            : profileImage,
-        name: formik.values.firstName + " " + formik.values.lastName,
-      });
-
-      notifySuccessFxn("Profile updated successfully");
       // Reset the file state after successful upload
       setFile(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
-      notifyErrorFxn("Error updating profile");
+      notifyErrorFxn(error?.message || "Error updating profile");
     } finally {
       setDataUploaded(true);
     }
@@ -357,6 +400,7 @@ const Page: React.FC<userType> = ({ userId }) => {
               component="form"
               onSubmit={async (e: any) => {
                 e.preventDefault();
+                console.log("[Profile] Form onSubmit triggered");
                 formik.handleSubmit();
               }}
             >
@@ -456,7 +500,7 @@ const Page: React.FC<userType> = ({ userId }) => {
                       ) : null}
                     </div>
                   </FormContainer>
-                  <FormContainer>
+                  {/* <FormContainer>
                     <CustomText className="form-label">Phone</CustomText>
                     <div className="">
                       <PhoneInput
@@ -485,39 +529,43 @@ const Page: React.FC<userType> = ({ userId }) => {
                         <FormError>Phone is not valid</FormError>
                       )}
                     </div>
+                  </FormContainer> */}
+
+                  <FormContainer>
+                    <CustomText className="form-label">Team Role</CustomText>
+                    <div>
+                      <input
+                        disabled
+                        type="text"
+                        name="teamRole"
+                        value={formik.values.teamRole}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        style={{
+                          border: `0.0521vw solid ${
+                            formik.touched.teamRole && formik.errors.teamRole
+                              ? "#E0E0E9"
+                              : "#E0E0E9"
+                          }`,
+                          ...inputStyles,
+                        }}
+                      />
+                      {formik.touched.teamRole && formik.errors.teamRole ? (
+                        <FormError>
+                          {typeof formik.errors.teamRole === "string"
+                            ? formik.errors.teamRole
+                            : null}
+                        </FormError>
+                      ) : null}
+                    </div>
                   </FormContainer>
                 </div>
-                <FormContainer>
-                  <CustomText className="form-label">Team Role</CustomText>
-                  <div>
-                    <input
-                      disabled
-                      type="text"
-                      name="teamRole"
-                      value={formik.values.teamRole}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      style={{
-                        border: `0.0521vw solid ${
-                          formik.touched.teamRole && formik.errors.teamRole
-                            ? "#E0E0E9"
-                            : "#E0E0E9"
-                        }`,
-                        ...inputStyles,
-                      }}
-                    />
-                    {formik.touched.teamRole && formik.errors.teamRole ? (
-                      <FormError>
-                        {typeof formik.errors.teamRole === "string"
-                          ? formik.errors.teamRole
-                          : null}
-                      </FormError>
-                    ) : null}
-                  </div>
-                </FormContainer>
               </div>
               <div className="text-right">
-                <SaveButton component={"button"} type="submit">
+                <SaveButton
+                  type="submit"
+                  onClick={() => console.log("[Profile] SaveButton clicked")}
+                >
                   {dataUploaded ? (
                     "Save"
                   ) : (
@@ -668,7 +716,7 @@ interface SaveButtonProps {
   type?: string;
 }
 
-const SaveButton = styled(Box)<SaveButtonProps>(({ theme }) => ({
+const SaveButton = styled("button")<SaveButtonProps>(({ theme }) => ({
   background: "#50589F",
   display: "flex",
   alignItems: "center",

@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import axios from "@/config/axiosConfig";
+import { apiUrl } from "@/config/apiUrl";
 import CustomTable from "../Table/index";
 import SearchIcon from "@mui/icons-material/Search";
 import UploadIcon from "@mui/icons-material/Upload";
@@ -74,7 +76,7 @@ const Heading = styled(Stack)(({ theme }) => ({
 }));
 import { notifyErrorFxn, notifySuccessFxn } from "@/utils/toast-fxn";
 import { useLazyQuery, useMutation } from "@apollo/react-hooks";
-import { UPDATE_SEAT_APP_ACCESS, UPDATE_USER } from "@/graphql/mutations/user";
+import { UPDATE_USER } from "@/graphql/mutations/user";
 import { IUser } from "./types";
 import ConfirmDialogBox, {
   MainMessage,
@@ -97,45 +99,221 @@ interface ITableCellTextBlue {
   addMarginLeft?: boolean;
   marginLeftValue?: number | string;
 }
+
+interface AppPricing {
+  _id: string;
+  appId: string;
+  name: string;
+  isActive: boolean;
+  maxSeats: number;
+}
+
+interface PricingData {
+  pricing: {
+    ownerAndManager: number;
+    member: number;
+  };
+  apps: AppPricing[];
+}
+
 const Users: React.FC = () => {
   const {
-    runGetUsersQuery,
     runGetProjectsQuery,
     addProjectMember,
-    editUser,
-    suspendMultipleUsers,
     deleteUser,
     deleteMultipleUsers,
     reInviteUser,
-    loading,
+    loading: gqlLoading,
   } = useUserPageGraphql();
-  const { updateUserPage, userPageState, getAssignedProjects, getUserInfo } =
-    useUserPage();
+  const {
+    updateUserPage,
+    userPageState,
+    unSelectUsers,
+    getAssignedProjects,
+    getUserInfo,
+  } = useUserPage();
   const [activeTab, setActiveTab] = useState(0);
   const [searchInput, setSearchInput] = useState("");
   const [tableData, setTableData] = useState<Array<any>>([]);
   const [activeCount, setActiveCount] = useState(0);
   const [archivedCount, setArchivedCount] = useState(0);
   const [invitedCount, setInvitedCount] = useState(0);
-  const [trackerCount, setTrackerCount] = useState(0);
-  const [salesCount, setSalesCount] = useState(0);
-  const [recruitCount, setRecruitCount] = useState(0);
-  const [marketCount, setMarketCount] = useState(0);
   const [totalUsersCount, setTotalUsersCount] = useState(0);
+  const [appCounts, setAppCounts] = useState<Record<string, number>>({});
   const [user] = useRecoilState(userAtom);
   const [billedCount, setBilledCount] = useState(0);
   const [openAppAccess, setOpenAppAccess] = useState(false);
   const [selectedSeatId, setSelectedSeatId] = useState("");
   const [currentAppAccess, setCurrentAppAccess] = useState<string[]>([]);
+  const [pricingData, setPricingData] = useState<PricingData | null>(null);
+  const [appsLoading, setAppsLoading] = useState(true);
+
+  const [locationFilterAnchorEl, setLocationFilterAnchorEl] =
+    useState<null | HTMLElement>(null);
+  const [selectedLocation, setSelectedLocation] = useState("");
+
+  const formatRole = React.useCallback((role: string) => {
+    return role === "ORGANIZATION_OWNER"
+      ? "Organisation owner"
+      : role === "ORGANIZATION_MANAGER"
+        ? "Organisation manager"
+        : role === "PROJECT_MANAGER"
+          ? "Project Manager"
+          : role === "USER" || role === "Member"
+            ? "User"
+            : "Viewer";
+  }, []);
+
+  const formatStatus = React.useCallback(
+    (status: string): string => {
+      if (!status) return "";
+      const statusLower = status.toLowerCase();
+      if (statusLower === "active") return "Active";
+      if (["suspended", "archive", "deleted", "deactivated", "inactive"].includes(statusLower))
+        return "Inactive";
+      if (statusLower === "invited") return "Invited";
+      return status;
+    },
+    [],
+  );
+
+  const formatDate = React.useCallback((dateString: string | Date): string => {
+    if (!dateString) return "N/A";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return "Invalid Date";
+      }
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    } catch (error) {
+      console.error("Error formatting date:", dateString, error);
+      return "Invalid Date";
+    }
+  }, []);
+
+  const getActiveTabText = React.useCallback((): string => {
+    if (activeTab === 0) return "ACTIVE";
+    if (activeTab === 1) return "INACTIVE";
+    return "INVITED";
+  }, [activeTab]);
+
+  const fetchUserStats = React.useCallback(async () => {
+    try {
+      const orgId =
+        user?.userData?.attachedOrganization?._id ||
+        user?.userData?.organizationId ||
+        "";
+      const res = await axios.get(`${apiUrl}/api/admin/users/stats`, {
+        params: { orgId: orgId || undefined },
+        withCredentials: true,
+      });
+      if (res.data.success) {
+        const stats = res.data.data;
+        setTotalUsersCount(stats.total);
+        setActiveCount(stats.active);
+        setInvitedCount(stats.invited);
+        setArchivedCount(stats.inactive);
+        setBilledCount(stats.billed);
+        setAppCounts(stats.appCounts);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user stats:", err);
+    }
+  }, [
+    user?.userData?.attachedOrganization?._id,
+    user?.userData?.organizationId,
+  ]);
+
+  const fetchData = React.useCallback(
+    async (params?: { status?: string; location?: string }) => {
+      try {
+        setAppsLoading(true);
+        fetchUserStats(); // Independent metrics fetch
+        const status = params?.status || getActiveTabText();
+        const location = params?.location || selectedLocation;
+
+        // Org admins only manage users in their own organization — scope the
+        // listing to the caller's org so it matches the org-scoped profile view.
+        const orgId =
+          user?.userData?.attachedOrganization?._id ||
+          user?.userData?.organizationId ||
+          "";
+
+        const res = await axios.get(`${apiUrl}/api/admin/users`, {
+          params: {
+            status,
+            location: location || undefined,
+            orgId: orgId || undefined,
+            limit: 100,
+          },
+          withCredentials: true,
+        });
+
+        if (res.data.success) {
+          const rawUsers = res.data.data.users;
+          const mappedUsers = rawUsers.map((u: any) => ({
+            id: u._id,
+            name: u.name,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            email: u.email,
+            image: u.profileImg,
+            role: formatRole(u.role),
+            rawRole: u.role,
+            status: formatStatus(u.status),
+            apps: u.appAccess || [],
+            source: u.source || "core",
+            location: u.location || "",
+            date: formatDate(u.createdAt),
+          }));
+          updateUserPage({ users: mappedUsers });
+        }
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
+      } finally {
+        setAppsLoading(false);
+      }
+    },
+    [
+      getActiveTabText,
+      selectedLocation,
+      updateUserPage,
+      formatRole,
+      formatStatus,
+      formatDate,
+      fetchUserStats,
+      user?.userData?.attachedOrganization?._id,
+      user?.userData?.organizationId,
+    ],
+  );
+
+  useEffect(() => {
+    const initFetch = async () => {
+      try {
+        const pricingResponse = await axios.get(`${apiUrl}/api/admin/earnings/pricing`, {
+          withCredentials: true,
+        });
+        if (pricingResponse.data.success) {
+          setPricingData(pricingResponse.data.data);
+        }
+        await fetchData();
+      } catch (err) {
+        console.error("Init fetch failed:", err);
+      }
+    };
+    initFetch();
+  }, [fetchData]);
 
   const handleAppAccessEdit = (clientId: string, apps: string[]) => {
     setSelectedSeatId(clientId);
     setCurrentAppAccess(apps);
     setOpenAppAccess(true);
   };
-  const [locationFilterAnchorEl, setLocationFilterAnchorEl] =
-    useState<null | HTMLElement>(null);
-  const [selectedLocation, setSelectedLocation] = useState("");
+
   const [columnMenuAnchorEl, setColumnMenuAnchorEl] =
     useState<null | HTMLElement>(null);
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
@@ -179,21 +357,11 @@ const Users: React.FC = () => {
 
     const filteredUsers = userData.filter((user: any) => {
       if (activeTab === 0) {
-        return (
-          user?.status?.toLowerCase() === "active" &&
-          user.acceptedInvite !== false
-        );
+        return user?.status?.toLowerCase() === "active";
       } else if (activeTab === 1) {
-        return (
-          ["archive", "suspended", "deleted"].includes(
-            user?.status?.toLowerCase(),
-          ) && user.acceptedInvite !== false
-        );
+        return user?.status?.toLowerCase() === "inactive";
       } else {
-        return (
-          user?.status?.toLowerCase() === "invited" ||
-          user.acceptedInvite === false
-        );
+        return user?.status?.toLowerCase() === "invited";
       }
     });
 
@@ -247,12 +415,101 @@ const Users: React.FC = () => {
   const handleLocationFilterSelect = (locationValue: string) => {
     setSelectedLocation(locationValue);
 
-    runGetUsersQuery({
+    fetchData({
       status: getActiveTabText(),
-      location: locationValue || undefined,
+      location: locationValue,
     });
+  };
 
-    handleLocationFilterClose();
+  const getAppIcon = (appId: string) => {
+    switch (appId) {
+      case "recruit":
+        return (
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"
+              stroke="#9333EA"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z"
+              stroke="#9333EA"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        );
+      case "tracker":
+        return (
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+              stroke="#10B981"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M12 6V12L16 14"
+              stroke="#10B981"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        );
+      default:
+        return (
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"
+              stroke="#3B82F6"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z"
+              stroke="#3B82F6"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        );
+    }
+  };
+
+  const getAppIconBg = (appId: string) => {
+    switch (appId) {
+      case "recruit":
+        return "#F3E8FF";
+      case "tracker":
+        return "#ECFDF5";
+      default:
+        return "#EEF4FF";
+    }
   };
 
   const handleSearch = React.useCallback(
@@ -264,25 +521,57 @@ const Users: React.FC = () => {
     [searchInput],
   );
 
-  const getActiveTabText = React.useCallback((): string => {
-    if (activeTab === 0) {
-      return "ACTIVE";
-    } else if (activeTab === 1) {
-      return "INACTIVE";
-    } else {
-      return "INVITED";
-    }
-  }, [activeTab]);
+  const editUser = async (clientId: string, targetStatus: string) => {
+    try {
+      const res = await axios.patch(
+        `${apiUrl}/api/admin/users/${clientId}/status`,
+        {
+          status: targetStatus,
+          reason: `Status updated to ${targetStatus} from Settings App`,
+        },
+        { withCredentials: true },
+      );
 
-  const [updateUser, { data: editUserData, loading: loadingUpdateUser }] =
-    useMutation(UPDATE_USER, {
-      onCompleted: () => {
-        runGetUsersQuery({
-          status: getActiveTabText(),
-          location: selectedLocation || undefined,
-        });
-      },
-    });
+      if (res.data.success) {
+        notifySuccessFxn(`User status updated to ${targetStatus}`);
+        await fetchData();
+        unSelectUsers();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Failed to update user status:", err);
+      notifyErrorFxn("Failed to update user status");
+      return false;
+    }
+  };
+
+  const suspendMultipleUsers = async (targetStatus: string) => {
+    try {
+      const selectedUsers = userPageState.selectedUsers;
+      if (!selectedUsers.length) return;
+
+      // Bridging multiple status updates to REST (Sequential for now, or implement bulk endpoint)
+      await Promise.all(
+        selectedUsers.map((id) =>
+          axios.patch(
+            `${apiUrl}/api/admin/users/${id}/status`,
+            {
+              status: targetStatus,
+            },
+            { withCredentials: true },
+          ),
+        ),
+      );
+
+      notifySuccessFxn(`Users updated to ${targetStatus}`);
+      await fetchData();
+      unSelectUsers();
+    } catch (err) {
+      console.error("Failed to update multiple users:", err);
+      notifyErrorFxn("Failed to update multiple users");
+    }
+  };
 
   useEffect(() => {
     if (userPageState?.users) {
@@ -292,9 +581,7 @@ const Users: React.FC = () => {
         if (activeTab === 0) {
           statusMatch = user?.status?.toLowerCase() === "active";
         } else if (activeTab === 1) {
-          statusMatch = ["archive", "suspended", "deleted"].includes(
-            user?.status?.toLowerCase(),
-          );
+          statusMatch = user?.status?.toLowerCase() === "inactive";
         } else {
           statusMatch = user?.status?.toLowerCase() === "invited";
         }
@@ -308,76 +595,9 @@ const Users: React.FC = () => {
         return statusMatch && locationMatch && searchMatch;
       });
 
-      const allUsers = userPageState.users;
-
-      const locationFiltered =
-        selectedLocation === ""
-          ? allUsers
-          : allUsers.filter((user: any) =>
-              (user?.location || "").toLowerCase().includes(selectedLocation),
-            );
-
-      const archived = locationFiltered?.filter((data: any) => {
-        return (
-          ["archive", "suspended", "deleted"].includes(
-            data?.status?.toLowerCase(),
-          ) && handleSearch(data)
-        );
-      }).length;
-
-      const activeC = locationFiltered?.filter((data: any) => {
-        return data?.status?.toLowerCase() === "active" && handleSearch(data);
-      }).length;
-
-      const invitedC = locationFiltered?.filter((data: any) => {
-        return data?.status?.toLowerCase() === "invited" && handleSearch(data);
-      }).length;
-
-      const isBilled = (user: any) => {
-        const apps = user?.apps || [];
-
-        const role = user?.rawRole || user?.role;
-        const billingRoles = ["ORGANIZATION_OWNER", "ORGANIZATION_MANAGER"];
-
-        const isTrackerBilled =
-          apps.includes("tracker") && billingRoles.includes(role);
-        const isSalesBilled = apps.includes("sales");
-        const isRecruitBilled = apps.includes("recruit");
-        const isMarketBilled = apps.includes("market");
-
-        return (
-          isTrackerBilled || isSalesBilled || isRecruitBilled || isMarketBilled
-        );
-      };
-
-      const billedC = locationFiltered?.filter((data: any) =>
-        isBilled(data),
-      ).length;
-
-      setActiveCount(activeC);
-      setArchivedCount(archived);
-      setInvitedCount(invitedC);
-      setBilledCount(billedC);
-
-      const recruitC =
-        locationFiltered?.filter(
-          (data: any) =>
-            data?.source === "recruit" || data?.source === "merged",
-        ).length || 0;
-      const trackerC =
-        locationFiltered?.filter(
-          (data: any) =>
-            data?.source === "tracker" || data?.source === "merged",
-        ).length || 0;
-      const totalUsersC = locationFiltered?.length || 0;
-
-      setTotalUsersCount(totalUsersC);
-      setRecruitCount(recruitC);
-      setTrackerCount(trackerC);
-
       setTableData(
         filteredUsers?.map((data: any) => {
-          const userIsBilled = isBilled(data);
+          const userIsBilled = (data.apps || []).length > 0;
           return {
             ...data,
             user: {
@@ -390,7 +610,7 @@ const Users: React.FC = () => {
               data.projectList?.length || data.projects?.length || 0,
             projectList: data.projectList || data.projects || [],
             id: data.id,
-            status: formatStatus(data.status, data.acceptedInvite),
+            status: formatStatus(data.status),
             apps: data.apps || [],
           };
         }),
@@ -402,64 +622,8 @@ const Users: React.FC = () => {
     selectedLocation,
     searchInput,
     handleSearch,
+    formatStatus,
   ]);
-
-  useEffect(() => {
-    updateUserPage({ users: [] });
-
-    runGetProjectsQuery();
-  }, [runGetProjectsQuery, updateUserPage]);
-
-  useEffect(() => {
-    if (userPageState.projects && userPageState.projects.length >= 0) {
-      runGetUsersQuery({
-        status: getActiveTabText(),
-        location: selectedLocation || undefined,
-      });
-    }
-  }, [
-    userPageState.projects,
-    getActiveTabText,
-    runGetUsersQuery,
-    selectedLocation,
-  ]);
-
-  useEffect(() => {
-    if (userPageState.projects && userPageState.projects.length >= 0) {
-      runGetUsersQuery({
-        status: getActiveTabText(),
-        location: selectedLocation || undefined,
-      });
-    }
-  }, [
-    activeTab,
-    selectedLocation,
-    getActiveTabText,
-    runGetUsersQuery,
-    userPageState.projects,
-  ]);
-
-  const formatStatus = (status: string, acceptedInvite: boolean): string => {
-    if (!status) return "";
-
-    const statusLower = status.toLowerCase();
-
-    // Check actual status first, not acceptedInvite
-    if (statusLower === "active") {
-      return "Active";
-    } else if (["suspended", "archive", "deleted"].includes(statusLower)) {
-      return "Inactive";
-    } else if (statusLower === "invited") {
-      return "Invited";
-    }
-
-    // Fallback: if status doesn't match above, check acceptedInvite
-    if (acceptedInvite === false) {
-      return "Invited";
-    }
-
-    return status; // Return original if no match
-  };
 
   const allAvailableColumns = [
     {
@@ -467,11 +631,7 @@ const Users: React.FC = () => {
       id: "user",
       render: (value: any) => {
         return (
-          <UserNameWrapper
-            onClick={() =>
-              router.push(`/user/add-user?sId=${value?.id}&view=${true}`)
-            }
-          >
+          <UserNameWrapper>
             <div
               style={{
                 display: "flex",
@@ -554,7 +714,10 @@ const Users: React.FC = () => {
         return (
           <div
             style={{ display: "flex", gap: "4px", cursor: "pointer" }}
-            onClick={() => handleAppAccessEdit(row.id, apps)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAppAccessEdit(row.id, apps);
+            }}
           >
             {apps.length > 0 ? (
               apps.map((app: string) => (
@@ -621,7 +784,8 @@ const Users: React.FC = () => {
             <Tooltip title="Edit">
               <ActionBtn
                 hide={hideEdit}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   handleChange("editUser", row.id);
                 }}
               >
@@ -631,7 +795,8 @@ const Users: React.FC = () => {
             <Tooltip title="Suspend">
               <ActionBtn
                 hide={hideSuspend}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   handleChange("suspendAccess", row.id);
                 }}
               >
@@ -641,7 +806,8 @@ const Users: React.FC = () => {
             <Tooltip title="Activate">
               <ActionBtn
                 hide={hideActive}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   handleChange("restoreAccess", row.id);
                 }}
               >
@@ -651,7 +817,8 @@ const Users: React.FC = () => {
             <Tooltip title="Reinvite">
               <ActionBtn
                 hide={hideInvite}
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   const userInfo = getUserInfo(row.id) || row;
                   handleChange("reInviteUser", row.id, userInfo);
                 }}
@@ -661,7 +828,8 @@ const Users: React.FC = () => {
             </Tooltip>
             <Tooltip title="Delete">
               <ActionBtn
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   handleChange("deleteUser", row.id);
                 }}
               >
@@ -911,7 +1079,7 @@ const Users: React.FC = () => {
       );
       setShowDialog(true);
     } else if (value === "editUser") {
-      router.push(`/user/add-user?sId=${userId}&edit=${true}`);
+      router.push(`/user/profile?sId=${userId}`);
     } else if (value === "reInviteUser") {
       showDialogBox(
         "Are you sure you want to",
@@ -1015,13 +1183,10 @@ const Users: React.FC = () => {
           ? selectedProjects
           : getAssignedProjects(userId)?.map((p: any) => p._id) || [];
 
-      // Call the editUser function with the status
-      let res = await editUser(projects, userId, access);
+      // Call the editUser function with the status (clientId, targetStatus)
+      let success = await editUser(userId, access);
 
-      if (res?.editUser === true) {
-        // Force a refresh of all users to ensure we have updated data
-        await runGetUsersQuery({});
-
+      if (success) {
         // Show success message with appropriate details based on the action
         showDialogBox(
           access === "SUSPENDED" ? "User Suspended" : "Access Restored",
@@ -1029,7 +1194,7 @@ const Users: React.FC = () => {
             ? "Successfully Suspended!"
             : "Successfully Restored!",
           access === "SUSPENDED"
-            ? `${userInfo?.name || userInfo?.email}'s account has been suspended. They will now appear as "Inactive" and will not be able to access the system.`
+            ? `${userInfo?.name || userInfo?.email}'s account has been suspended.`
             : `${userInfo?.name || userInfo?.email}'s access has been successfully restored.`,
           () => {},
           () => {},
@@ -1037,22 +1202,6 @@ const Users: React.FC = () => {
           async () => {
             setOpen(false);
             setShowDialog(false);
-
-            if (access === "ACTIVE" && activeTab === 1) {
-              await runGetUsersQuery({});
-
-              setActiveTab(0);
-
-              runGetUsersQuery({
-                status: "ACTIVE",
-                location: selectedLocation || undefined,
-              });
-            } else {
-              runGetUsersQuery({
-                status: getActiveTabText(),
-                location: selectedLocation || undefined,
-              });
-            }
           },
           "",
           "",
@@ -1060,36 +1209,6 @@ const Users: React.FC = () => {
           false,
           false,
           access === "SUSPENDED" ? <UserSuspendIcon /> : <UserUpdateIcon />,
-        );
-        setShowDialog(true);
-      } else {
-        // Extract error message if available
-        let errorMsg = "Please try again later.";
-        if (res?.error && typeof res.error === "object") {
-          if (res.error.message) {
-            errorMsg = res.error.message;
-          } else if (res.error.toString) {
-            errorMsg = res.error.toString();
-          }
-        }
-
-        showDialogBox(
-          "Operation Failed",
-          "Error!",
-          `Could not ${access === "SUSPENDED" ? "suspend" : "restore"} ${userInfo.name || userInfo.email}'s account. ${errorMsg}`,
-          () => {},
-          () => {},
-          true,
-          () => {
-            setOpen(false);
-            setShowDialog(false);
-          },
-          "",
-          "",
-          "",
-          false,
-          false,
-          <UserSuspendIcon />,
         );
         setShowDialog(true);
       }
@@ -1124,11 +1243,7 @@ const Users: React.FC = () => {
 
   const suspendMultiple = async (status = "SUSPENDED") => {
     try {
-      // Check if we have any users selected
-      if (
-        !userPageState.selectedUsers ||
-        userPageState.selectedUsers.length === 0
-      ) {
+      if (!userPageState.selectedUsers?.length) {
         showDialogBox(
           "Operation Failed",
           "No Users Selected",
@@ -1151,82 +1266,31 @@ const Users: React.FC = () => {
         return;
       }
 
-      let res = await suspendMultipleUsers(status);
+      await suspendMultipleUsers(status);
 
-      if (res?.updateUserStatus) {
-        await runGetUsersQuery({});
-
-        showDialogBox(
-          status === "SUSPENDED" ? "Users Suspended" : "Access Restored",
-          status === "SUSPENDED"
-            ? "Successfully Suspended!"
-            : "Successfully Restored!",
-          status === "SUSPENDED"
-            ? "Selected users have been suspended. They will now appear as 'Inactive' and will not be able to access the system."
-            : "Selected users' access has been successfully restored.",
-          () => {},
-          () => {},
-          true,
-          async () => {
-            setOpen(false);
-            setShowDialog(false);
-
-            if (status === "ACTIVE" && activeTab === 1) {
-              await runGetUsersQuery({});
-
-              setActiveTab(0);
-
-              // Filter for active users
-              runGetUsersQuery({
-                status: "ACTIVE",
-                location: selectedLocation || undefined,
-              });
-            } else {
-              runGetUsersQuery({
-                status: getActiveTabText(),
-                location: selectedLocation || undefined,
-              });
-            }
-          },
-          "",
-          "",
-          "",
-          false,
-          false,
-          status === "SUSPENDED" ? <UserSuspendIcon /> : <UserUpdateIcon />,
-        );
-        setShowDialog(true);
-      } else {
-        // Extract error message if available
-        let errorMsg = "Please try again later.";
-        if (res?.error && typeof res.error === "object") {
-          if (res.error.message) {
-            errorMsg = res.error.message;
-          } else if (res.error.toString) {
-            errorMsg = res.error.toString();
-          }
-        }
-
-        showDialogBox(
-          "Operation Failed",
-          "Error!",
-          `Could not ${status === "SUSPENDED" ? "suspend" : "restore"} the selected users. ${errorMsg}`,
-          () => {},
-          () => {},
-          true,
-          () => {
-            setOpen(false);
-            setShowDialog(false);
-          },
-          "",
-          "",
-          "",
-          false,
-          false,
-          <UserUpdateIcon />,
-        );
-        setShowDialog(true);
-      }
+      showDialogBox(
+        status === "SUSPENDED" ? "Users Suspended" : "Access Restored",
+        status === "SUSPENDED"
+          ? "Successfully Suspended!"
+          : "Successfully Restored!",
+        status === "SUSPENDED"
+          ? "Selected users have been suspended."
+          : "Selected users' access has been successfully restored.",
+        () => {},
+        () => {},
+        true,
+        async () => {
+          setOpen(false);
+          setShowDialog(false);
+        },
+        "",
+        "",
+        "",
+        false,
+        false,
+        status === "SUSPENDED" ? <UserSuspendIcon /> : <UserUpdateIcon />,
+      );
+      setShowDialog(true);
     } catch (error) {
       // Extract error message if available
       let errorMsg = "An unexpected error occurred. Please try again later.";
@@ -1280,7 +1344,7 @@ const Users: React.FC = () => {
         <UserDeleteIcon />,
       );
       setShowDialog(true);
-      runGetUsersQuery({ status: getActiveTabText() });
+      fetchData({ status: getActiveTabText() });
     } else {
       showDialogBox(
         "Access delete",
@@ -1328,7 +1392,7 @@ const Users: React.FC = () => {
         <UserDeleteIcon />,
       );
       setShowDialog(true);
-      runGetUsersQuery({ status: getActiveTabText() });
+      fetchData({ status: getActiveTabText() });
     } else {
       showDialogBox(
         "Deletion",
@@ -1402,7 +1466,7 @@ const Users: React.FC = () => {
           <UserUpdateIcon />,
         );
         setShowDialog(true);
-        runGetUsersQuery({ status: getActiveTabText() });
+        fetchData({ status: getActiveTabText() });
       } else {
         showDialogBox(
           "Re invite",
@@ -1490,7 +1554,7 @@ const Users: React.FC = () => {
       value === 0 ? "ACTIVE" : value === 1 ? "INACTIVE" : "INVITED";
 
     // Fetch users with both tab and location filters
-    runGetUsersQuery({
+    fetchData({
       status: statusText,
       location: selectedLocation || undefined,
     });
@@ -1756,46 +1820,13 @@ const Users: React.FC = () => {
             </AnalyticsIconWrapper>
           </AnalyticsCardHeader>
           <AnalyticsCardValue>
-            {loading ? <Skeleton width="40%" /> : totalUsersCount}
+            {appsLoading ? <Skeleton width="40%" /> : totalUsersCount}
           </AnalyticsCardValue>
         </AnalyticsCard>
 
         <AnalyticsCard>
           <AnalyticsCardHeader>
-            <AnalyticsCardTitle>Recruit Users</AnalyticsCardTitle>
-            <AnalyticsIconWrapper style={{ backgroundColor: "#F3E8FF" }}>
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"
-                  stroke="#9333EA"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z"
-                  stroke="#9333EA"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </AnalyticsIconWrapper>
-          </AnalyticsCardHeader>
-          <AnalyticsCardValue>
-            {loading ? <Skeleton width="40%" /> : recruitCount}
-          </AnalyticsCardValue>
-        </AnalyticsCard>
-
-        <AnalyticsCard>
-          <AnalyticsCardHeader>
-            <AnalyticsCardTitle>Tracker Users</AnalyticsCardTitle>
+            <AnalyticsCardTitle>Active Users</AnalyticsCardTitle>
             <AnalyticsIconWrapper style={{ backgroundColor: "#ECFDF5" }}>
               <svg
                 width="24"
@@ -1812,7 +1843,7 @@ const Users: React.FC = () => {
                   strokeLinejoin="round"
                 />
                 <path
-                  d="M12 6V12L16 14"
+                  d="M8 12L10.5 14.5L16 9"
                   stroke="#10B981"
                   strokeWidth="2"
                   strokeLinecap="round"
@@ -1822,9 +1853,115 @@ const Users: React.FC = () => {
             </AnalyticsIconWrapper>
           </AnalyticsCardHeader>
           <AnalyticsCardValue>
-            {loading ? <Skeleton width="40%" /> : trackerCount}
+            {appsLoading ? <Skeleton width="40%" /> : activeCount}
           </AnalyticsCardValue>
         </AnalyticsCard>
+
+        <AnalyticsCard>
+          <AnalyticsCardHeader>
+            <AnalyticsCardTitle>Invited Users</AnalyticsCardTitle>
+            <AnalyticsIconWrapper style={{ backgroundColor: "#FEF3C7" }}>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"
+                  stroke="#F59E0B"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M8.5 11C10.7091 11 12.5 9.20914 12.5 7C12.5 4.79086 10.7091 3 8.5 3C6.29086 3 4.5 4.79086 4.5 7C4.5 9.20914 6.29086 11 8.5 11Z"
+                  stroke="#F59E0B"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M23 11V7M20 9H26"
+                  stroke="#F59E0B"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </AnalyticsIconWrapper>
+          </AnalyticsCardHeader>
+          <AnalyticsCardValue>
+            {appsLoading ? <Skeleton width="40%" /> : invitedCount}
+          </AnalyticsCardValue>
+        </AnalyticsCard>
+
+        <AnalyticsCard>
+          <AnalyticsCardHeader>
+            <AnalyticsCardTitle>Inactive Users</AnalyticsCardTitle>
+            <AnalyticsIconWrapper style={{ backgroundColor: "#FEE2E2" }}>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16 21V19C16 17.9391 15.5786 16.9217 14.8284 16.1716C14.0783 15.4214 13.0609 15 12 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21"
+                  stroke="#EF4444"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M8.5 11C10.7091 11 12.5 9.20914 12.5 7C12.5 4.79086 10.7091 3 8.5 3C6.29086 3 4.5 4.79086 4.5 7C4.5 9.20914 6.29086 11 8.5 11Z"
+                  stroke="#EF4444"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </AnalyticsIconWrapper>
+          </AnalyticsCardHeader>
+          <AnalyticsCardValue>
+            {appsLoading ? <Skeleton width="40%" /> : archivedCount}
+          </AnalyticsCardValue>
+        </AnalyticsCard>
+        {/* 
+        {pricingData?.apps
+          ?.filter((app) => app.isActive)
+          .map((app) => (
+            <AnalyticsCard key={app._id}>
+              <AnalyticsCardHeader>
+                <AnalyticsCardTitle>{app.name} Users</AnalyticsCardTitle>
+                <AnalyticsIconWrapper
+                  style={{ backgroundColor: getAppIconBg(app.appId) }}
+                >
+                  {getAppIcon(app.appId)}
+                </AnalyticsIconWrapper>
+              </AnalyticsCardHeader>
+              <AnalyticsCardValue>
+                {appsLoading ? (
+                  <Skeleton width="40%" />
+                ) : (
+                  `${appCounts[app.appId] || 0} / ${app.maxSeats || "∞"}`
+                )}
+              </AnalyticsCardValue>
+              <Typography
+                sx={{
+                  fontSize: "0.75rem",
+                  color: "#6F6F76",
+                  mt: 0.5,
+                  fontWeight: 500,
+                  opacity: 0.8,
+                }}
+              >
+                Billed Seats Used
+              </Typography>
+            </AnalyticsCard>
+          ))} */}
       </AnalyticsCardsContainer>
 
       <div style={{ padding: "1rem 0", width: "100%" }}>
@@ -1856,6 +1993,7 @@ const Users: React.FC = () => {
             <AddMembersForm
               open={addMember}
               onClose={() => setAddMember(false)}
+              existingUsage={appCounts}
             />
           )}
           <AppAccessModal
@@ -1863,14 +2001,14 @@ const Users: React.FC = () => {
             onClose={() => setOpenAppAccess(false)}
             clientId={selectedSeatId}
             currentAccess={currentAppAccess}
-            onUpdate={() => runGetUsersQuery({ status: getActiveTabText() })}
+            onUpdate={() => fetchData({ status: getActiveTabText() })}
           />
           <DialogBox
             title="Assign Project"
             actionText="Update"
             handleClose={() => {
               setOpen(false);
-              runGetUsersQuery({ status: getActiveTabText() });
+              fetchData({ status: getActiveTabText() });
             }}
             open={open}
             selectedUser=""
@@ -2189,7 +2327,7 @@ const Users: React.FC = () => {
             </UserCardsContainer>
           ) : (
             <UserTable>
-              {loading ? (
+              {appsLoading ? (
                 <div style={{ padding: "1rem" }}>
                   {[...Array(5)].map((_, i) => (
                     <Skeleton
@@ -2209,6 +2347,9 @@ const Users: React.FC = () => {
                   key={activeTab}
                   onSelect={(e: any) => {
                     setUsersSelected(e);
+                  }}
+                  onClick={(row: any) => {
+                    router.push(`/user/profile?sId=${row.id}`);
                   }}
                   columns={columns}
                   data={tableData}
@@ -2653,7 +2794,7 @@ const AppAccessModal = ({
   onUpdate: () => void;
 }) => {
   const [selectedApps, setSelectedApps] = useState<string[]>(currentAccess);
-  const [updateAppAccess, { loading }] = useMutation(UPDATE_SEAT_APP_ACCESS);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     setSelectedApps(currentAccess);
@@ -2667,18 +2808,26 @@ const AppAccessModal = ({
 
   const handleSave = async () => {
     try {
-      await updateAppAccess({
-        variables: {
-          clientId,
+      setIsUpdating(true);
+      await axios.patch(
+        `${apiUrl}/api/admin/users/${clientId}/app-access`,
+        {
           appAccess: selectedApps,
         },
-      });
+        { withCredentials: true },
+      );
       notifySuccessFxn("App access updated successfully");
       onUpdate();
       onClose();
     } catch (error: any) {
       console.error(error);
-      notifyErrorFxn(error?.message || "Failed to update app access");
+      notifyErrorFxn(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to update app access",
+      );
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -2690,6 +2839,7 @@ const AppAccessModal = ({
       actionText="Save Changes"
       onUpdate={handleSave}
       selectedUser={clientId}
+      isLoading={isUpdating}
     >
       <div style={{ padding: "0.5rem" }}>
         <div

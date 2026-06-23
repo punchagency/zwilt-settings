@@ -1,5 +1,6 @@
 // import AppLayout from "@/containers/layout";
 // import { TempGetUser } from "@/graphql/queries/user";
+import React from "react";
 import useApollo from "@/hooks/useApollo";
 // import { initializeApollo } from "@/lib/with-apollo";
 import "@/styles/billingsummary.css";
@@ -40,6 +41,26 @@ function ZwiltApp({
 }: // currentUser,
 // userId,
 AppProps & AppPropsExtended) {
+  // Extract token from URL on initial load and store in localStorage
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      console.log('[ZwiltApp] Checking URL for token...');
+      console.log('[ZwiltApp] Current URL:', window.location.href);
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      console.log('[ZwiltApp] Token from URL:', token ? `${token.length} chars` : 'NOT FOUND');
+      if (token) {
+        console.log('[ZwiltApp] Found token in URL, storing in localStorage');
+        localStorage.setItem('zw_us', JSON.stringify({ token }));
+        // Remove token from URL to keep it out of history
+        window.history.replaceState({}, document.title, window.location.pathname);
+        console.log('[ZwiltApp] Token stored and URL cleaned');
+      } else {
+        console.log('[ZwiltApp] No token found in URL');
+      }
+    }
+  }, []);
+
   const client = useApollo(pageProps);
 
   return (
@@ -47,20 +68,27 @@ AppProps & AppPropsExtended) {
       <>
         <Head>
           <title>Zwilt Settings</title>
-          <meta name='description' content='Zwilt settings' />
-          <meta name='viewport' content='width=device-width, initial-scale=1' />
-          <meta charSet='UTF-8' />
-          <link rel='icon' href='/Favicon.ico' sizes='any' />
-          <link rel='icon' href='/icon-192x192.png' sizes='192x192' />
-          <link rel='icon' href='/icon-512x512.png' sizes='512x512' />
+          <meta name="description" content="Zwilt settings" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <meta charSet="UTF-8" />
+          <link rel="icon" href="/Favicon.ico" sizes="any" />
+          <link rel="icon" href="/icon-192x192.png" sizes="192x192" />
+          <link rel="icon" href="/icon-512x512.png" sizes="512x512" />
         </Head>
 
         <RecoilRoot>
           <ApolloProvider client={client}>
-            <AuthGuard>
-              <ToastContainer />
-              <Component {...pageProps} />
-            </AuthGuard>
+            {Component.requireAuth !== false ? (
+              <AuthGuard>
+                <ToastContainer />
+                <Component {...pageProps} />
+              </AuthGuard>
+            ) : (
+              <>
+                <ToastContainer />
+                <Component {...pageProps} />
+              </>
+            )}
             {/* {(() => {
               if (currentUser) {
                 return (

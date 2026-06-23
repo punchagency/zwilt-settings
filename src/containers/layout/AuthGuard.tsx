@@ -1,24 +1,61 @@
-import { useLazyQuery } from "@apollo/react-hooks";
-
 import React, { useEffect, useState } from "react";
-import { TempGetUser } from "@/graphql/queries/user";
 import useUser from "utils/recoil_store/hooks/use-user-state";
 import AppLayout from ".";
 
 const AuthGuard: React.FC<React.PropsWithChildren> = ({ children }) => {
   const { updateUser } = useUser();
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState<any>(null);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const [fetchUser, { loading }] = useLazyQuery(TempGetUser, {
-    fetchPolicy: "network-only",
-  });
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data } = await fetchUser();
-        const responseUser = data?.getUser?.data?.client;
-        setUserData(!responseUser ? null : responseUser);
+        setLoading(true);
+        const token =
+          typeof window !== "undefined" ? localStorage.getItem("zw_us") : null;
+        const parsedToken = token ? JSON.parse(token) : null;
+
+        const baseUrl =
+          process.env.NEXT_PUBLIC_APP_SERVER || "http://localhost:5005";
+        const response = await fetch(`${baseUrl}/api/v1/identity/me`, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...(parsedToken?.token && { "x-auth-token": parsedToken.token }),
+          },
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+          throw new Error(responseData?.message || "Failed to fetch user");
+        }
+
+        const rawData = responseData?.data;
+
+        let responseUser = null;
+        let organization = null;
+
+        // Use the user data returned from the REST API
+        if (rawData?.user) {
+          responseUser = rawData.user;
+          organization = rawData.organization;
+        }
+        // Roles drive admin-only UI (sidebar gating). identity/me returns these
+        // at the top level, not nested under user.
+        const currentUser = !responseUser
+          ? null
+          : {
+              user: responseUser,
+              organization: organization,
+              systemRole: responseUser?.systemRole ?? rawData?.systemRole ?? null,
+              organizationRole: responseUser?.organizationRole ?? responseUser?.role ?? rawData?.organizationRole ?? rawData?.role ?? null,
+            };
+        setUserData(currentUser);
+        setLoading(false);
+
         if (!responseUser) {
           window.location.href = `${process.env.NEXT_PUBLIC_STORE_APP}/auth/signin?v=account&r=settings`;
 
@@ -27,17 +64,22 @@ const AuthGuard: React.FC<React.PropsWithChildren> = ({ children }) => {
             window.localStorage.clear();
           }
         } else {
-          updateUser({ currentUser: responseUser });
+          updateUser({ currentUser });
         }
       } catch (err: any) {
-        console.log("Error getting user data", err);
+        setLoading(false);
         setError(err);
         setUserData(null);
+
+        // Redirect to signin if authentication fails
+        if (typeof window !== "undefined") {
+          window.location.href = `${process.env.NEXT_PUBLIC_STORE_APP}/auth/signin?v=account&r=settings`;
+        }
       }
     };
 
     fetchData();
-  }, [fetchUser, updateUser]);
+  }, [updateUser]);
 
   if (loading) return <></>;
 

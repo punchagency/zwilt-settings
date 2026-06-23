@@ -5,6 +5,8 @@ export interface SideBar {
   icon: string;
   href: string;
   icon2?: JSX.Element;
+  // Visible only to org admins (owner/manager) and system admins.
+  adminOnly?: boolean;
 }
 
 export interface BasicsArrayType {

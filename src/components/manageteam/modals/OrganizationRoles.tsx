@@ -6,6 +6,7 @@ export const memberType = [
 export const memberRoles = [
   { label: "Owner", value: "Owner" },
   { label: "Member", value: "Member" },
+  { label: "Viewer", value: "VIEW" },
   { label: "Data Analyst", value: "Data Analyst" },
   { label: "Managing Director", value: "Managing Director" },
   { label: "Tech Lead", value: "Tech Lead" },

@@ -16,7 +16,7 @@ const ProfileContent:React.FC<ProfileContentType> = ({userProfileRef, userState,
     className='absolute flex flex-col items-center justify-center right-0 top-[6.5vw] mr-[3.33vw] w-[17.25vw] h-auto bg-white border border-gray-100 rounded-[1.041vw] z-[10] p-[0.83vw] shadow-custom gap-[0.75rem]'
   >
     <Image
-      src={userState?.user?.profile_img ?? userAvatar}
+      src={userState?.user?.profileImg || userState?.user?.profile_img || userState?.profile_img || userAvatar}
       className='h-[6.666vw] w-[6.4vw] border rounded-[1.5625vw] object-cover mx-auto'
       width={100}
       height={100}
@@ -24,10 +24,13 @@ const ProfileContent:React.FC<ProfileContentType> = ({userProfileRef, userState,
     />
     <div className='flex flex-col items-center justify-center gap-[0.2rem]'>
       <p className='text-[#282833] font-medium text-[1.25vw] leading-[1.5vw]'>
+        {userState?.user?.name || userState?.name}
+      </p>
+      <p className='text-[0.8vw] font-normal text-[#28283380]'>
         {userState?.organization?.name}
       </p>
       <p className='text-[0.75vw]  font-normal leading-[1vw] text-[#282833]'>
-        {userState?.user?.email}
+        {userState?.user?.email || userState?.email}
       </p>
       <p className='text-[#28283380] text-[0.625vw] font-normal leading-[0.75vw]'>
         Managed by zwilt.com

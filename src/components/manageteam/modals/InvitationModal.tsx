@@ -51,6 +51,35 @@ const InvitationModal: React.FC<addTeamProps> = ({
   const { data } = useQuery(GET_INVITED_USERS);
   const { data: billingData } = useQuery(GET_ORG_BILLING_PREVIEW);
   const currentSeats: number = billingData?.getOrgBillingPreview?.data?.seats ?? 0;
+  const currentTotal: number = billingData?.getOrgBillingPreview?.data?.total ?? 0;
+  const viewerSeats: number = billingData?.getOrgBillingPreview?.data?.viewerSeats ?? 0;
+  const freeViewerSeats: number = billingData?.getOrgBillingPreview?.data?.freeViewerSeats ?? 0;
+  const viewerPricePerSeat: number = billingData?.getOrgBillingPreview?.data?.viewerPricePerSeat ?? 9.00;
+  const pricePerSeat: number = billingData?.getOrgBillingPreview?.data?.pricePerSeat ?? 99.99;
+
+  const isAdmin = selectedUser === "Admin User";
+  const isViewer = selectedRole === "VIEW";
+
+  let billingText = "";
+  let proposedSeats = currentSeats;
+  let proposedTotal = currentTotal;
+
+  if (isAdmin) {
+    billingText = `Inviting ${email} as an Admin User will add 1 billed seat.`;
+    proposedSeats = currentSeats + 1;
+    proposedTotal = currentTotal + pricePerSeat;
+  } else if (isViewer) {
+    if (viewerSeats === 0) {
+      billingText = `Inviting ${email} as a Viewer will use 1 complimentary seat (no additional charge).`;
+      proposedSeats = currentSeats;
+      proposedTotal = currentTotal;
+    } else {
+      billingText = `Inviting ${email} as a Viewer will add 1 billed seat (additional Viewer seat).`;
+      proposedSeats = currentSeats + 1;
+      proposedTotal = currentTotal + viewerPricePerSeat;
+    }
+  }
+
   const [billingConfirm, setBillingConfirm] = useState(false);
 
   const selectUserbuttonRef = useRef<HTMLButtonElement>(null);
@@ -175,7 +204,7 @@ const InvitationModal: React.FC<addTeamProps> = ({
   const handleSendInvite = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateInviteForm()) return;
-    if (selectedUser === "Admin User") {
+    if (isAdmin || isViewer) {
       setBillingConfirm(true);
     } else {
       doInvite();
@@ -233,19 +262,19 @@ const InvitationModal: React.FC<addTeamProps> = ({
         {billingConfirm ? (
           <div className="flex flex-col w-full mt-[2.08vw] space-y-[1.04vw]">
             <p className="text-[0.83vw] text-[#6F6F76]">
-              Inviting <span className="font-semibold text-[#282833]">{email}</span> as an Admin User will add 1 billed seat.
+              {billingText}
             </p>
             <div className="w-full border border-[#e0e0e9] rounded-[0.78vw] overflow-hidden">
               <div className="flex items-center justify-between px-[1.04vw] py-[0.78vw] border-b border-[#e0e0e9] bg-[#f4f4fa]">
                 <span className="text-[0.78vw] text-[#6F6F76]">Current</span>
                 <span className="text-[0.83vw] font-medium text-[#282833]">
-                  {currentSeats} seat{currentSeats !== 1 ? "s" : ""} — ${(currentSeats * 99.99).toFixed(2)}/mo
+                  {currentSeats} seat{currentSeats !== 1 ? "s" : ""} — ${currentTotal.toFixed(2)}/mo
                 </span>
               </div>
               <div className="flex items-center justify-between px-[1.04vw] py-[0.78vw]">
                 <span className="text-[0.78vw] text-[#6F6F76]">After inviting</span>
                 <span className="text-[0.83vw] font-semibold text-[#50589F]">
-                  {currentSeats + 1} seat{currentSeats + 1 !== 1 ? "s" : ""} — ${((currentSeats + 1) * 99.99).toFixed(2)}/mo
+                  {proposedSeats} seat{proposedSeats !== 1 ? "s" : ""} — ${proposedTotal.toFixed(2)}/mo
                 </span>
               </div>
             </div>

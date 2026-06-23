@@ -55,7 +55,7 @@ const ModalContent = styled("div")<ModalContentProps>(
   };
   width: ${width || "726px"}; 
   background: white;
-  padding: 1rem;
+  padding: 1.75rem 1.5rem 1rem 1.5rem;
   border-radius: ${borderRadius || "1rem"};
 padding: ${addPadding ? "1.5rem" : undefined};
 // max-height: ${height};
