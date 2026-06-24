@@ -27,7 +27,7 @@ const ChatBox = ({ unreadCount, style }: any) => {
         });
       }}
     >
-      <StyledBadge badgeContent={unreadCount ?? 0} color='secondary'>
+      <StyledBadge badgeContent={unreadCount ?? 0} color="secondary">
         <IconWrapper>
           <ChatIcon isHovered={isHovered} />
         </IconWrapper>
@@ -50,7 +50,7 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
 
 const ChatBoxWrapper = styled(Box, {
   shouldForwardProp: (prop) => prop !== "$active",
-})(({ theme, $active }: any) => ({
+})<{ $active?: boolean }>(({ theme, $active }) => ({
   position: "relative",
   padding: calculatePxToPercentage(16),
   cursor: "pointer",
