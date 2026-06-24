@@ -1,4 +1,4 @@
-import { IObjectWithAnyKeys } from "./types/global";
+import { IObjectWithAnyKeys } from "@/types/global";
 
 export const excludeObjectKeys = (obj: IObjectWithAnyKeys, keys: string[]) => {
   let result = { ...obj };

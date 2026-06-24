@@ -9,7 +9,6 @@ import Modal from "../modal";
 import { styled } from "@mui/material";
 import Image from "next/image";
 import ImageIcon from "../../assets/img/image.svg";
-import Dropdown from "../dropdown";
 import ArrowDownIcon from "../../assets/img/arrow-down.svg";
 import ConfirmNotification from "./ConfirmNotification";
 import CustomDropdown from "../dropdown/CustomDropdown";
@@ -264,42 +263,7 @@ const FormTextInput: React.FC<FormTextInputT> = ({
     </FormTextInputWrapper>
   );
 };
-interface FormDropdownInputT {
-  data: Array<string>;
-  label: string;
-  extraLabel: string;
-  extra: string;
-  extraX: string;
-  placeholder: string;
-}
-const FormDropdownInput: React.FC<FormDropdownInputT> = ({
-  data,
-  label,
-  extra,
-  extraLabel,
-  extraX,
-  placeholder,
-}) => {
-  return (
-    <FormDropdownInputWrapper>
-      <div>
-        <label className="label">{label}</label>
-        <FromDropdownExtraInfo>
-          {extraLabel} {extra}
-        </FromDropdownExtraInfo>
-      </div>
-      <span>{extraX}</span>
-      <DropdownWrapper>
-        <Dropdown data={data} setValue={(x) => x}>
-          <DropdownContentWrapper>
-            <span>{placeholder}</span>
-            <Image src={ArrowDownIcon} alt="" />
-          </DropdownContentWrapper>
-        </Dropdown>
-      </DropdownWrapper>
-    </FormDropdownInputWrapper>
-  );
-};
+
 
 const NewProjectModalBtn = styled("div")`
   // margin-top: 3rem;

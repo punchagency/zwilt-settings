@@ -4,7 +4,7 @@ import AppLayout from "./AppLayout";
 import Head from "next/head";
 import AuthLayout from "./AuthLayout";
 import { NextPage } from "next";
-import useLogin from "@/hooks/auth/use-login";
+import useUser from "utils/recoil_store/hooks/use-user-state";
 import Loader from "../common/Loader/Loader";
 
 type Page = {
@@ -16,7 +16,7 @@ type Page = {
 const Layout = ({ isNoLayoutWrapper, layoutType, ...otherProps }: Page) => {
   console.log(isNoLayoutWrapper, layoutType, "layout type");
   const { pathname } = useRouter();
-  const { getUserState, updateUserState } = useLogin();
+  const { getUserState, updateUser: updateUserState } = useUser();
   const user = getUserState();
 
   return (

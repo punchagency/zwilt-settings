@@ -1,7 +1,7 @@
 import { styled, Tooltip, useTheme, useMediaQuery } from "@mui/material";
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import Image from "next/image";
-import CustomTable from "../Table";
+import CustomTable from "../Table/index";
 import SearchIcon from "../../assets/img/search-normal.svg";
 import AddIcon from "../../assets/img/add.svg";
 import PlusIcon from "../../assets/img/plus.svg";
