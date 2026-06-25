@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
-import { Box, styled } from "@mui/material";
+import { Box, BoxProps, styled } from "@mui/material";
 import Badge from "@mui/material/Badge";
 import { calculatePxToPercentage } from "./styled";
 import ChatIcon from "./Chat";
@@ -48,9 +48,9 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
   },
 }));
 
-const ChatBoxWrapper = styled("div", {
+const ChatBoxWrapper = styled(Box, {
   shouldForwardProp: (prop) => prop !== "$active",
-})<{ $active?: boolean }>(({ theme, $active }) => ({
+})<BoxProps & { $active?: boolean }>(({ theme, $active }) => ({
   position: "relative",
   padding: calculatePxToPercentage(16),
   cursor: "pointer",
