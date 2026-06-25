@@ -6,9 +6,17 @@ import dynamic from "next/dynamic";
 // import SpinnerBig from '../../components/SpinnerBig';
 // @ts-ignore
 
-const ChatComponent = dynamic(() => import("remoteApp/nextjs-chat"), {
-  ssr: false, // Ensure it only works on the client-side
-});
+const ChatComponent = dynamic(
+  () =>
+    // @ts-ignore
+    import("remoteApp/nextjs-chat").catch((err) => {
+      console.warn("Failed to load federated component nextjs-chat:", err);
+      return () => null;
+    }),
+  {
+    ssr: false, // Ensure it only works on the client-side
+  }
+);
 
 const ChatB = () => {
   const router = useDynamicRouter();

@@ -48,7 +48,7 @@ const StyledBadge = styled(Badge)(({ theme }) => ({
   },
 }));
 
-const ChatBoxWrapper = styled(Box, {
+const ChatBoxWrapper = styled("div", {
   shouldForwardProp: (prop) => prop !== "$active",
 })<{ $active?: boolean }>(({ theme, $active }) => ({
   position: "relative",

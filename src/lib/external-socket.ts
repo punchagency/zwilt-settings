@@ -6,7 +6,7 @@ const connectionURL =
   process.env.NEXT_PUBLIC_APP_SERVER || "http://localhost:5000";
 
 export const socket: Socket = io(connectionURL, {
-  transports: ["websocket"],
+  transports: ["polling", "websocket"],
 });
 
 socket.on("connect", () => {
