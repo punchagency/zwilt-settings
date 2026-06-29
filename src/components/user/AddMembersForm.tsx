@@ -18,7 +18,7 @@ import {
   UPDATE_USER,
   ADD_PROJECT_MEMBER,
 } from "@/graphql/mutations/user";
-import { INVITE_USERS_ADMIN } from "@/graphql/mutations/manageTeam";
+import { INVITE_USER } from "@/graphql/mutations/manageTeam";
 import CloseIcon from "@mui/icons-material/Close";
 import {
   IInitialValues,
@@ -132,9 +132,9 @@ function AddMembersForm({
     fetchPricing();
   }, []);
 
-  const [inviteUser, { data, loading, error }] = useMutation(INVITE_USERS_ADMIN, {
+  const [inviteUser, { data, loading, error }] = useMutation(INVITE_USER, {
     onCompleted: (data) => {
-      if (data?.inviteUsers) {
+      if (data?.inviteUser) {
         notifySuccessFxn("Invite sent successfully");
         handleClose();
       }
@@ -324,20 +324,26 @@ function AddMembersForm({
                 });
               } else {
                 try {
+                  // Ecosystem A (InvitationModel): the manageTeam `inviteUser`
+                  // mutation derives the org from the caller and only needs
+                  // email/role/appAccess — the invitee's name is collected on the
+                  // store-client signup page at accept time.
+                  const payload = generateInviteUserPayLoad({
+                    profileImage,
+                    ...values,
+                    attachedOrganizationId:
+                      user?.userData?.attachedOrganization?._id,
+                  });
                   const result = await inviteUser({
                     variables: {
                       input: {
-                        ...generateInviteUserPayLoad({
-                          profileImage,
-                          ...values,
-                          attachedOrganizationId:
-                            user?.userData?.attachedOrganization?._id,
-                        }),
-                        projectIds: [],
+                        email: payload.email,
+                        role: payload.role,
+                        appAccess: payload.appAccess || [],
                       },
                     },
                   });
-                  if (result?.data?.inviteUsers) {
+                  if (result?.data?.inviteUser) {
                   }
                 } catch (error: any) {
                   console.error("Invite user error:", error);

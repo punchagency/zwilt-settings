@@ -11,7 +11,7 @@ import { apiUrl } from "@/config/apiUrl";
 import Input from "../common/input";
 import userAtom from "@/atoms/user-atom";
 import useLocationOptions from "@/hooks/team/use-location-options";
-import { INVITE_USERS_ADMIN } from "@/graphql/mutations/manageTeam";
+import { INVITE_USER } from "@/graphql/mutations/manageTeam";
 import { notifyErrorFxn, notifySuccessFxn } from "@/utils/toast-fxn";
 import {
   Role,
@@ -78,9 +78,9 @@ const AddMemberModal: React.FC<NewProjectModalT> = ({
     onComplete();
   };
 
-  const [inviteUser, { loading }] = useMutation(INVITE_USERS_ADMIN, {
+  const [inviteUser, { loading }] = useMutation(INVITE_USER, {
     onCompleted: (data) => {
-      if (data?.inviteUsers) {
+      if (data?.inviteUser !== undefined) {
         notifySuccessFxn("Invite sent successfully");
         close();
       }

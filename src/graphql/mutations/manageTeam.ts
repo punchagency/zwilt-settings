@@ -60,11 +60,9 @@ export const INVITE_USER = gql`
   }
 `;
 
-// Admin-DB invite: writes the admin `users` + `organizationusers` records and
-// emails the invitation (server resolver: inviteUsers / AdminInviteUserInput).
-export const INVITE_USERS_ADMIN = gql`
-  mutation InviteUsersAdmin($input: AdminInviteUserInput!) {
-    inviteUsers(input: $input)
+export const RESEND_INVITATION = gql`
+  mutation ResendInvitation($invitationId: String!) {
+    resendInvitation(invitationId: $invitationId)
   }
 `;
 

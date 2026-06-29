@@ -16,7 +16,9 @@ import {
   SUSPEND_SEAT,
   REACTIVATE_SEAT,
   INVITE_USER,
+  RESEND_INVITATION,
 } from "@/graphql/mutations/manageTeam";
+import { GET_PENDING_INVITATION_BY_EMAIL } from "@/graphql/queries/manageTeam";
 import { useLazyQuery, useMutation } from "@apollo/react-hooks";
 import { useCallback, useEffect, useMemo } from "react";
 import useUserPage from "./use-user-page";
@@ -458,64 +460,78 @@ const useUserPageGraphql = () => {
   }, [deleteMultipleUsersMutation, user, userPageState, unSelectUsers]);
 
   const [
-    reInviteUserMutation,
+    resendInvitationMutation,
     { loading: reInviteUserLoading, error: reInviteUserError },
-  ] = useMutation(INVITE_USER);
+  ] = useMutation(RESEND_INVITATION);
+
+  // Fallback: used when no pending InvitationModel document exists (e.g. legacy
+  // user was invited via the old Ecosystem B flow) — creates a fresh Ecosystem A invite.
+  const [reInviteUserMutation] = useMutation(INVITE_USER);
+
+  const [fetchPendingInvitation] = useLazyQuery(GET_PENDING_INVITATION_BY_EMAIL, {
+    fetchPolicy: "network-only",
+  });
 
   const reInviteUser = useCallback(
     async (selectedUser: string, userData?: any) => {
       let userInfo = userData || getUserInfo(selectedUser);
 
       if (!userInfo) {
-        return { inviteUsers: false, error: "User not found" };
+        return { success: false, error: "User not found" };
       }
 
-      const title = userInfo?.title || "Mr";
       const email = userInfo?.email;
-      const firstName = userInfo?.firstName || "";
-      const lastName = userInfo?.lastName || "";
-      const profileImg = userInfo?.image || "";
-
       if (!email) {
-        return { inviteUsers: false, error: "Email is required" };
+        return { success: false, error: "Email is required" };
       }
 
       try {
-        const { data, errors } = await reInviteUserMutation({
-          variables: {
-            input: {
-              title: title,
-              role:
-                userInfo?.role === "Organisation owner"
-                  ? "ORGANIZATION_OWNER"
-                  : userInfo?.role === "Organisation manager"
-                    ? "ORGANIZATION_MANAGER"
-                    : userInfo?.role === "Project Manager"
-                      ? "PROJECT_MANAGER"
-                      : userInfo?.role === "User"
-                        ? "USER"
-                        : "VIEW",
-              lastName: lastName,
-              firstName: firstName,
-              email: email,
-              profileImg: profileImg,
-              location: userInfo?.location,
-              organization: user?.userData?.attachedOrganization?._id,
-            },
-          },
+        // Step 1: Look up existing pending invitation by email
+        const { data: invData } = await fetchPendingInvitation({
+          variables: { email },
         });
 
-        if (errors && errors.length > 0) {
-          return { inviteUsers: false, error: errors[0].message };
-        }
+        const pendingInvitation = invData?.getPendingInvitationByEmail;
 
-        return data;
+        if (pendingInvitation?._id) {
+          // Step 2a: Pending invitation exists — resend it
+          const { data } = await resendInvitationMutation({
+            variables: { invitationId: String(pendingInvitation._id) },
+          });
+          return { inviteUsers: true, data };
+        } else {
+          // Step 2b: No pending invitation — create a fresh one via INVITE_USER
+          const { data, errors } = await reInviteUserMutation({
+            variables: {
+              input: {
+                email,
+                role:
+                  userInfo?.role === "Organisation owner"
+                    ? "ORGANIZATION_OWNER"
+                    : userInfo?.role === "Organisation manager"
+                      ? "ORGANIZATION_MANAGER"
+                      : userInfo?.role === "Project Manager"
+                        ? "PROJECT_MANAGER"
+                        : userInfo?.role === "User"
+                          ? "USER"
+                          : "VIEW",
+                appAccess: userInfo?.apps ?? [],
+                organization: user?.userData?.attachedOrganization?._id,
+              },
+            },
+          });
+
+          if (errors && errors.length > 0) {
+            return { inviteUsers: false, error: errors[0].message };
+          }
+          return { inviteUsers: true, data };
+        }
       } catch (error) {
         console.log(error, "reinvite user error");
         return { inviteUsers: false, error };
       }
     },
-    [reInviteUserMutation, getUserInfo, user],
+    [resendInvitationMutation, reInviteUserMutation, fetchPendingInvitation, getUserInfo, user],
   );
   return useMemo(
     () => ({

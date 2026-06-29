@@ -74,3 +74,13 @@ export const GET_ORG_BILLING_PREVIEW = gql`
     }
   }
 `;
+
+export const GET_PENDING_INVITATION_BY_EMAIL = gql`
+  query GetPendingInvitationByEmail($email: String!) {
+    getPendingInvitationByEmail(email: $email) {
+      _id
+      email
+      status
+    }
+  }
+`;

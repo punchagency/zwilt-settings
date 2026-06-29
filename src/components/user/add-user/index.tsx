@@ -7,7 +7,7 @@ import { Formik, useFormikContext } from "formik";
 import Button from "@/components/common/button";
 import { useLazyQuery, useMutation } from "@apollo/react-hooks";
 import { UPDATE_USER } from "@/graphql/mutations/user";
-import { INVITE_USERS_ADMIN } from "@/graphql/mutations/manageTeam";
+import { INVITE_USER } from "@/graphql/mutations/manageTeam";
 import {
   IInitialValues,
   Role,
@@ -103,9 +103,9 @@ const AddUserForms = () => {
           },
         ];
 
-  const [inviteUser, { data, loading, error }] = useMutation(INVITE_USERS_ADMIN, {
+  const [inviteUser, { data, loading, error }] = useMutation(INVITE_USER, {
     onCompleted: (data) => {
-      if (data?.inviteUsers) {
+      if (data?.inviteUser !== undefined) {
         notifySuccessFxn("Invite sent successfully");
       }
     },
