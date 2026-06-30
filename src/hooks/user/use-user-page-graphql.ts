@@ -3,7 +3,6 @@ import {
   DELETE_MULTIPLE_USERS,
   DELETE_USER,
   EDIT_USER,
-  INVITE_USER as TRACKER_INVITE_USER,
   UPDATE_MULTIPLE_USERS,
 } from "@/graphql/mutations/user";
 import { GET_PROJECTS_DATA, GET_USERS } from "@/graphql/queries/user";
@@ -23,7 +22,8 @@ import { useLazyQuery, useMutation } from "@apollo/react-hooks";
 import { useCallback, useEffect, useMemo } from "react";
 import useUserPage from "./use-user-page";
 import userAtom from "@/atoms/user-atom";
-import { useRecoilState } from "recoil";
+import teamAtom from "@/atoms/team-atom";
+import { useRecoilState, useRecoilValue } from "recoil";
 
 const BILLABLE_ROLES = ["ORGANIZATION_OWNER", "ORGANIZATION_MANAGER"];
 const OTHER_APPS = [
@@ -37,6 +37,21 @@ const OTHER_APPS = [
 
 const useUserPageGraphql = () => {
   const [user, setUser] = useRecoilState(userAtom);
+  const teamsState = useRecoilValue(teamAtom);
+
+  // Team locations are unique per org (enforced on team create/update), so a
+  // member's location maps to exactly one Team entity — resolve it unambiguously.
+  const resolveTeamIdByLocation = useCallback(
+    (location?: string): string => {
+      const target = (location || "").toLowerCase().trim();
+      if (!target) return "";
+      const match = (teamsState?.teams || []).find(
+        (t: any) => (t?.location || "").toLowerCase().trim() === target,
+      );
+      return match?._id ? String(match._id) : "";
+    },
+    [teamsState],
+  );
   const { updateUserPage, userPageState, unSelectUsers, getUserInfo } =
     useUserPage();
 
@@ -516,6 +531,8 @@ const useUserPageGraphql = () => {
                           ? "USER"
                           : "VIEW",
                 appAccess: userInfo?.apps ?? [],
+                location: userInfo?.location ?? "",
+                teamId: resolveTeamIdByLocation(userInfo?.location),
                 organization: user?.userData?.attachedOrganization?._id,
               },
             },
@@ -531,7 +548,7 @@ const useUserPageGraphql = () => {
         return { inviteUsers: false, error };
       }
     },
-    [resendInvitationMutation, reInviteUserMutation, fetchPendingInvitation, getUserInfo, user],
+    [resendInvitationMutation, reInviteUserMutation, fetchPendingInvitation, getUserInfo, user, resolveTeamIdByLocation],
   );
   return useMemo(
     () => ({

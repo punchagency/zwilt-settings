@@ -41,6 +41,7 @@ export const GET_INVITED_USERS = gql`
         role
         clientAccountType
         profileStatus
+        location
         appAccess
         isBilledSeat
         seatStatus

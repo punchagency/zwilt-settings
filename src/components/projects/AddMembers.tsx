@@ -50,7 +50,17 @@ const AddMemberModal: React.FC<NewProjectModalT> = ({
 }) => {
   const user = useRecoilValue(userAtom);
   const attachedOrganizationId = user?.userData?.attachedOrganization?._id;
-  const { locationOptions, loading: locationsLoading } = useLocationOptions();
+  const { locationOptions, teams, loading: locationsLoading } =
+    useLocationOptions();
+
+  // The team selector is keyed by the Team entity _id (unique) so the selection is
+  // unambiguous. The location string is derived from the chosen team for the
+  // member's display/label field.
+  const [selectedTeamId, setSelectedTeamId] = useState("");
+  const teamOptions = (teams || []).map((t: any) => ({
+    label: t?.name || t?.location || "",
+    value: String(t?._id || ""),
+  }));
 
   const [appOptions, setAppOptions] = useState<AppOption[]>(FALLBACK_APP_OPTIONS);
   const [appsLoading, setAppsLoading] = useState(true);
@@ -126,6 +136,7 @@ const AddMemberModal: React.FC<NewProjectModalT> = ({
                     ...values,
                     attachedOrganizationId,
                   }),
+                  teamId: selectedTeamId,
                   projectIds: [],
                 },
               },
@@ -208,19 +219,26 @@ const AddMemberModal: React.FC<NewProjectModalT> = ({
                 />
                 <Input
                   required
-                  options={locationOptions}
+                  options={teamOptions}
                   type="select"
                   label="Team"
                   placeholder={
                     locationsLoading ? "Loading teams..." : "Select Team"
                   }
-                  value={values.location}
+                  value={selectedTeamId}
                   error={
                     touched.location && errors.location
                       ? `${errors.location}`
                       : ""
                   }
-                  onChange={handleChange("location")}
+                  onChange={(e: any) => {
+                    const id = e?.target?.value ?? e;
+                    setSelectedTeamId(id);
+                    const t = (teams || []).find(
+                      (x: any) => String(x?._id) === String(id),
+                    );
+                    setFieldValue("location", t?.location || "");
+                  }}
                   onBlur={handleBlur("location")}
                   disabled={locationsLoading}
                 />
