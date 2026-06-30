@@ -36,7 +36,9 @@ import {
   Stack,
   FormControlLabel,
   Skeleton,
+  TablePagination,
 } from "@mui/material";
+import { useDebounce } from "use-debounce";
 import AvatarP from "../avatar";
 import useUserPage from "@/hooks/user/use-user-page";
 import { useRouter } from "next/router";
@@ -134,6 +136,13 @@ const Users: React.FC = () => {
   } = useUserPage();
   const [activeTab, setActiveTab] = useState(0);
   const [searchInput, setSearchInput] = useState("");
+  // Server-side pagination + search. The /api/admin/users endpoint already
+  // supports page/limit/search; debounce the input so we don't fire a request
+  // per keystroke.
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1); // 1-based (MUI TablePagination is 0-based)
+  const [totalCount, setTotalCount] = useState(0);
+  const [debouncedSearch] = useDebounce(searchInput, 400);
   const [tableData, setTableData] = useState<Array<any>>([]);
   const [activeCount, setActiveCount] = useState(0);
   const [archivedCount, setArchivedCount] = useState(0);
@@ -229,12 +238,19 @@ const Users: React.FC = () => {
   ]);
 
   const fetchData = React.useCallback(
-    async (params?: { status?: string; location?: string }) => {
+    async (params?: {
+      status?: string;
+      location?: string;
+      page?: number;
+      search?: string;
+    }) => {
       try {
         setAppsLoading(true);
         fetchUserStats(); // Independent metrics fetch
         const status = params?.status || getActiveTabText();
-        const location = params?.location || selectedLocation;
+        const location = params?.location ?? selectedLocation;
+        const currentPage = params?.page ?? page;
+        const search = params?.search ?? debouncedSearch;
 
         // Org admins only manage users in their own organization — scope the
         // listing to the caller's org so it matches the org-scoped profile view.
@@ -248,13 +264,16 @@ const Users: React.FC = () => {
             status,
             location: location || undefined,
             orgId: orgId || undefined,
-            limit: 100,
+            search: search || undefined,
+            page: currentPage,
+            limit: PAGE_SIZE,
           },
           withCredentials: true,
         });
 
         if (res.data.success) {
           const rawUsers = res.data.data.users;
+          setTotalCount(res.data.data.pagination?.total ?? rawUsers.length);
           const mappedUsers = rawUsers.map((u: any) => ({
             id: u._id,
             name: u.name,
@@ -281,6 +300,8 @@ const Users: React.FC = () => {
     [
       getActiveTabText,
       selectedLocation,
+      page,
+      debouncedSearch,
       updateUserPage,
       formatRole,
       formatStatus,
@@ -291,22 +312,35 @@ const Users: React.FC = () => {
     ],
   );
 
+  // Pricing is independent of the user list — fetch it once on mount.
   useEffect(() => {
-    const initFetch = async () => {
+    (async () => {
       try {
-        const pricingResponse = await axios.get(`${apiUrl}/api/admin/earnings/pricing`, {
-          withCredentials: true,
-        });
+        const pricingResponse = await axios.get(
+          `${apiUrl}/api/admin/earnings/pricing`,
+          { withCredentials: true },
+        );
         if (pricingResponse.data.success) {
           setPricingData(pricingResponse.data.data);
         }
-        await fetchData();
       } catch (err) {
-        console.error("Init fetch failed:", err);
+        console.error("Pricing fetch failed:", err);
       }
-    };
-    initFetch();
-  }, [fetchData]);
+    })();
+  }, []);
+
+  // Single source of truth for the user list: (re)fetch from the server whenever
+  // the tab, location, page, or debounced search changes (runs on mount too).
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, selectedLocation, page, debouncedSearch]);
+
+  // A new search collapses back to the first page so results aren't hidden on a
+  // now-out-of-range page. (Tab/location resets are handled in their handlers.)
+  useEffect(() => {
+    setPage((prev) => (prev === 1 ? prev : 1));
+  }, [debouncedSearch]);
 
   const handleAppAccessEdit = (clientId: string, apps: string[]) => {
     setSelectedSeatId(clientId);
@@ -413,12 +447,9 @@ const Users: React.FC = () => {
   };
 
   const handleLocationFilterSelect = (locationValue: string) => {
+    // Batched with setSelectedLocation → single fetch on page 1.
     setSelectedLocation(locationValue);
-
-    fetchData({
-      status: getActiveTabText(),
-      location: locationValue,
-    });
+    setPage(1);
   };
 
   const getAppIcon = (appId: string) => {
@@ -512,15 +543,6 @@ const Users: React.FC = () => {
     }
   };
 
-  const handleSearch = React.useCallback(
-    (userData: any) => {
-      return `${userData?.firstName} ${userData?.lastName}`
-        ?.toLowerCase()
-        .includes(searchInput.toLowerCase());
-    },
-    [searchInput],
-  );
-
   const editUser = async (clientId: string, targetStatus: string) => {
     try {
       const res = await axios.patch(
@@ -575,28 +597,11 @@ const Users: React.FC = () => {
 
   useEffect(() => {
     if (userPageState?.users) {
-      const filteredUsers = userPageState.users.filter((user: any) => {
-        let statusMatch = false;
-
-        if (activeTab === 0) {
-          statusMatch = user?.status?.toLowerCase() === "active";
-        } else if (activeTab === 1) {
-          statusMatch = user?.status?.toLowerCase() === "inactive";
-        } else {
-          statusMatch = user?.status?.toLowerCase() === "invited";
-        }
-
-        const locationMatch =
-          selectedLocation === "" ||
-          (user?.location || "").toLowerCase().includes(selectedLocation);
-
-        const searchMatch = handleSearch(user);
-
-        return statusMatch && locationMatch && searchMatch;
-      });
-
+      // The server already filters by status (tab), location, and search and
+      // returns just the current page, so render the rows as-is — re-filtering
+      // here would drop valid server matches (e.g. email search hits).
       setTableData(
-        filteredUsers?.map((data: any) => {
+        userPageState.users?.map((data: any) => {
           const userIsBilled = (data.apps || []).length > 0;
           return {
             ...data,
@@ -616,14 +621,7 @@ const Users: React.FC = () => {
         }),
       );
     }
-  }, [
-    userPageState.users,
-    activeTab,
-    selectedLocation,
-    searchInput,
-    handleSearch,
-    formatStatus,
-  ]);
+  }, [userPageState.users, formatStatus]);
 
   const allAvailableColumns = [
     {
@@ -1547,17 +1545,10 @@ const Users: React.FC = () => {
   }, [usersSelected]);
 
   const toggleTab = (value: number) => {
+    // Batched with setActiveTab → the data-fetch effect runs once with the new
+    // tab on page 1 (the effect is keyed on both activeTab and page).
     setActiveTab(value);
-
-    // Get the appropriate status based on tab
-    const statusText =
-      value === 0 ? "ACTIVE" : value === 1 ? "INACTIVE" : "INVITED";
-
-    // Fetch users with both tab and location filters
-    fetchData({
-      status: statusText,
-      location: selectedLocation || undefined,
-    });
+    setPage(1);
   };
 
   const ControlPanelDropdownData = [
@@ -2357,6 +2348,16 @@ const Users: React.FC = () => {
                 />
               )}
             </UserTable>
+          )}
+          {!appsLoading && totalCount > PAGE_SIZE && (
+            <TablePagination
+              component="div"
+              count={totalCount}
+              page={page - 1}
+              onPageChange={(_, newPage) => setPage(newPage + 1)}
+              rowsPerPage={PAGE_SIZE}
+              rowsPerPageOptions={[PAGE_SIZE]}
+            />
           )}
         </UsersWrapper>
       </div>

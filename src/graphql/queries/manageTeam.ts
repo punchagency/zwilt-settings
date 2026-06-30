@@ -41,6 +41,7 @@ export const GET_INVITED_USERS = gql`
         role
         clientAccountType
         profileStatus
+        location
         appAccess
         isBilledSeat
         seatStatus
@@ -71,6 +72,16 @@ export const GET_ORG_BILLING_PREVIEW = gql`
           total
         }
       }
+    }
+  }
+`;
+
+export const GET_PENDING_INVITATION_BY_EMAIL = gql`
+  query GetPendingInvitationByEmail($email: String!) {
+    getPendingInvitationByEmail(email: $email) {
+      _id
+      email
+      status
     }
   }
 `;

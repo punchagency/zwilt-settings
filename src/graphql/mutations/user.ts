@@ -38,12 +38,6 @@ export const ADD_PROJECT_MEMBER = gql`
     addNewProjects(input: $input)
   }
 `;
-export const INVITE_USER = gql`
-  mutation InviteUser($input: InviteUserInput!) {
-    inviteUsers(input: $input)
-  }
-`;
-
 export const UPDATE_SEAT_APP_ACCESS = gql`
   mutation UpdateSeatAppAccess($clientId: String!, $appAccess: [String!]!) {
     updateSeatAppAccess(clientId: $clientId, appAccess: $appAccess) {

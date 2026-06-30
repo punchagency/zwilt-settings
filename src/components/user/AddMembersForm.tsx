@@ -18,7 +18,7 @@ import {
   UPDATE_USER,
   ADD_PROJECT_MEMBER,
 } from "@/graphql/mutations/user";
-import { INVITE_USERS_ADMIN } from "@/graphql/mutations/manageTeam";
+import { INVITE_USER } from "@/graphql/mutations/manageTeam";
 import CloseIcon from "@mui/icons-material/Close";
 import {
   IInitialValues,
@@ -112,7 +112,33 @@ function AddMembersForm({
   const [profileImage, setProfileImage] = useState("");
   const [editInitialState, setEditInitialState] = useState<IInitialValues>();
   const [userData, setUserData] = useState<any>(null);
-  const { locationOptions, loading: locationsLoading } = useLocationOptions();
+  const { locationOptions, teams, loading: locationsLoading } =
+    useLocationOptions();
+
+  // The team selector is keyed by the Team entity _id (unique) — never by the
+  // location string — so the selection is unambiguous even if two teams happen to
+  // share a location. The location string is derived from the chosen team for the
+  // user's display/label field.
+  const [selectedTeamId, setSelectedTeamId] = useState("");
+  const teamOptions = (teams || []).map((t: any) => ({
+    label: t?.name || t?.location || "",
+    value: String(t?._id || ""),
+  }));
+
+  // Edit mode: prefill the selector from the member's current team (matched by
+  // location, since that's what the member doc carries) so the dropdown reflects
+  // their team.
+  useEffect(() => {
+    if (userData?.location && (teams || []).length > 0) {
+      const t = (teams || []).find(
+        (x: any) =>
+          (x?.location || "").toLowerCase().trim() ===
+          String(userData.location).toLowerCase().trim(),
+      );
+      setSelectedTeamId(t ? String(t._id) : "");
+    }
+  }, [userData, teams]);
+
   const [pricingData, setPricingData] = useState<PricingData | null>(null);
   const [pricingLoading, setPricingLoading] = useState(true);
 
@@ -132,9 +158,9 @@ function AddMembersForm({
     fetchPricing();
   }, []);
 
-  const [inviteUser, { data, loading, error }] = useMutation(INVITE_USERS_ADMIN, {
+  const [inviteUser, { data, loading, error }] = useMutation(INVITE_USER, {
     onCompleted: (data) => {
-      if (data?.inviteUsers) {
+      if (data?.inviteUser) {
         notifySuccessFxn("Invite sent successfully");
         handleClose();
       }
@@ -324,20 +350,29 @@ function AddMembersForm({
                 });
               } else {
                 try {
+                  // Ecosystem A (InvitationModel): the manageTeam `inviteUser`
+                  // mutation derives the org from the caller. The invitee's name
+                  // is collected on the store-client signup page at accept time,
+                  // but the admin-assigned Team (location) must ride on the
+                  // invite — it's applied to the user on accept.
+                  const payload = generateInviteUserPayLoad({
+                    profileImage,
+                    ...values,
+                    attachedOrganizationId:
+                      user?.userData?.attachedOrganization?._id,
+                  });
                   const result = await inviteUser({
                     variables: {
                       input: {
-                        ...generateInviteUserPayLoad({
-                          profileImage,
-                          ...values,
-                          attachedOrganizationId:
-                            user?.userData?.attachedOrganization?._id,
-                        }),
-                        projectIds: [],
+                        email: payload.email,
+                        role: payload.role,
+                        appAccess: payload.appAccess || [],
+                        location: payload.location || "",
+                        teamId: selectedTeamId,
                       },
                     },
                   });
-                  if (result?.data?.inviteUsers) {
+                  if (result?.data?.inviteUser) {
                   }
                 } catch (error: any) {
                   console.error("Invite user error:", error);
@@ -556,20 +591,29 @@ function AddMembersForm({
                   onBlur={handleBlur("assignedRole")}
                 />
                 <Input
-                  options={locationOptions}
+                  options={teamOptions}
                   type="select"
                   required
                   label="Team"
                   placeholder={
                     locationsLoading ? "Loading teams..." : "Select Team"
                   }
-                  value={values.location}
+                  value={selectedTeamId}
                   error={
                     touched.location && errors.location
                       ? `${errors.location}`
                       : ""
                   }
-                  onChange={handleChange("location")}
+                  onChange={(e: any) => {
+                    const id = e?.target?.value ?? e;
+                    setSelectedTeamId(id);
+                    const t = (teams || []).find(
+                      (x: any) => String(x?._id) === String(id),
+                    );
+                    // Keep the Formik location string in sync for the member's
+                    // label/display and the required-field validation.
+                    setFieldValue("location", t?.location || "");
+                  }}
                   onBlur={handleBlur("location")}
                   disabled={locationsLoading}
                 />
