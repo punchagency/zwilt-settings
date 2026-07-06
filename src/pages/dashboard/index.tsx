@@ -11,7 +11,8 @@ const DashboardPage: React.FC = () => {
           <Heading>
             <CustomText className="page-title">Analytics Dashboard</CustomText>
             <CustomText className="page-subtext">
-              Monitor your workspace usage, seat allocation, and team analytics.
+              Monitor your workspace usage, seat allocation, and team analytics
+              here.
             </CustomText>
           </Heading>
           <SectionDivider />
