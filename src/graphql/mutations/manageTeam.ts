@@ -72,12 +72,6 @@ export const CANCEL_INVITATION = gql`
   }
 `;
 
-export const ACCEPT_INVITE = gql`
-  mutation AcceptInvite($userId: String) {
-    acceptInvite(userId: $userId)
-  }
-`;
-
 export const UPDATE_MEMBER_INFO = gql`
   mutation UpdateMemberInfo($input: UpdateMemberInfoInput!) {
     updateMemberInfo(input: $input) {
